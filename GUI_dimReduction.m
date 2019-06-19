@@ -226,6 +226,7 @@ set(handles.popupmenu1,'Value',2);
 iniParameters.locflag = 0;
 set(handles.checkbox1,'Value',0);
 iniParameters.locfactor = 0;
+set(handles.edit2,'String',num2str(0));
 set(handles.edit1,'Value',0);
 %Downsample by 2 both temporally and spatially
 iniParameters.fd = [2, 2];
