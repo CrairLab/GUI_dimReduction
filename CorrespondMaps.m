@@ -25,7 +25,7 @@ function varargout = CorrespondMaps(varargin)
 
 % Edit the above text to modify the response to help CorrespondMaps
 
-% Last Modified by GUIDE v2.5 18-Jun-2019 21:50:40
+% Last Modified by GUIDE v2.5 21-Jun-2019 14:45:39
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -90,14 +90,18 @@ function pushbutton1_Callback(hObject, eventdata, handles)
 % hObject    handle to pushbutton1 (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-if isempty(get(handles.output, 'UserData'))
+% Pushbutton to load dimReduction object from the main GUI or from .mat file
+
+if isempty(get(handles.output, 'UserData')) %If no input from the main GUI
     try
-        uiopen('Please load a dimReduction object');
+        uiopen('Please load a dimReduction object'); %Try load .mat file
+        %Show progress
         set(handles.edit1, 'String', 'Object loaded from dialog window!')        
     catch
         warning('Please load a dimReduction object')
     end
     
+    %Save the loaded data into variable curObj
     vList = whos; 
     for i = 1:size(vList,1)
         if strcmp(vList(i).class, 'dimReduction')
@@ -107,8 +111,10 @@ if isempty(get(handles.output, 'UserData'))
         end
     end
 else
+    %Show progress
     set(handles.edit1, 'String', 'Object loaded from previous GUI!')   
 end
+
 set(handles.edit1, 'ForegroundColor', 'Red' )
 
 function runCorrespondMaps(curObj, handles, methodflag, mapflag)
@@ -118,65 +124,93 @@ function runCorrespondMaps(curObj, handles, methodflag, mapflag)
 %   handles   UI component handles
 %   methodflag     0 for pixelwise, 1 for framewise
 %   mapflag   1 for tSNE, 2 for diffusion map
+
 if nargin<3
     mapflag = 1;
 end
 
+% Show reference brain map at axes1
 A_mean = curObj.A_ref;
 imshow(mat2gray(A_mean), 'Parent', handles.axes1);
 hold(handles.axes1, 'on');
 
+% Choose which map to plot
 if mapflag == 1
     Embedding = curObj.Y;
 elseif mapflag == 2
     Embedding = curObj.Dmap;
 end
 
-
+% Plot the map in a different figure.
 cmap = 1:size(Embedding,1);
 fig1 = figure;
 map_handle = scatter3(Embedding(:,1),Embedding(:,2),Embedding(:,3),[],cmap,'filled');
 colorbar;
 %map_handle = plot3(Embedding(:,1),Embedding(:,2),Embedding(:,3));
 
+% Save the handles info as a struct data affiliated to the figure.
 data.map_handle = map_handle;
 data.handles = handles;
 fig1.UserData =  data;
 
+% Allow callback function of brushed data. 
 if ~methodflag
+    
+    % For framewise correspondence
+    % Get the handle of the brush function
     h = brush(fig1);
     set(h, 'Enable', 'On', 'ActionPostCallback', @callbackGetSelectedData);
-elseif methodflag
-    h = brush(fig1);
-    set(h, 'Enable', 'On', 'ActionPostCallback', @callbackClickA3DPoint);
-end
     
-function callbackClickA3DPoint(src, ~)
-    disp('Please only select one point!')
-    data = src.UserData;
-    brush_data = get(data.map_handle, 'BrushData');
-    brushed_idx = find(brush_data);
-    firstIdx = brushed_idx(1);
-    data.brushed = firstIdx;
-    src.UserData = data;
-    handles = data.handles;
+elseif methodflag
+    
+    % For pixelwise correspondence, first reconstruct 3D movie
     try
-        curObj = get(handles.output, 'UserData');
         sz_fd = curObj.sz_fd;
-        A_rcs = nan(sz_fd(1)*sz_fd(2), sz_fd(3));
+        A_rcs = nan(sz_fd(1)*sz_fd(2), sz_fd(3)); %Reconstructed matrix
         A_rd = curObj.A_rd;
-        
+        %Transpose the A_rd if it is framewise analysis
         if curObj.tflag == 1
             A_rd = A_rd';
         end
-        
+        %Reconstruct 3D movie from 2D A_rd.
         try
             A_rcs(curObj.subIdx,:) = A_rd;
         catch
             A_rcs(curObj.subIdx,:) = A_rd';
         end
-        
         A_rcs = reshape(A_rcs, sz_fd);
+    catch
+        warning('Can not reconstruct 3D movie from the 2D matrix!')
+    end
+    %Update data struct
+    data.A_rcs = A_rcs;
+    fig1.UserData =  data;
+    % Get the handle of the brush function
+    h = brush(fig1);
+    set(h, 'Enable', 'On', 'ActionPostCallback', @callbackClickA3DPoint);
+end
+    
+function callbackClickA3DPoint(src, ~)
+% Callback function for framewise correspondence (correspond reduced points 
+% to movie frames)
+% Inputs:
+%   src    handle of current figure
+    
+    %Select the first point in a set of brushed points
+    disp('Please only select one point!')
+    data = src.UserData;
+    brush_data = get(data.map_handle, 'BrushData');
+    brushed_idx = find(brush_data);
+    firstIdx = brushed_idx(1);
+    %Save to index to the data struct
+    data.brushed = firstIdx;
+    %Update UserData of the figure
+    src.UserData = data;
+    %Get the handles of GUI components
+    handles = data.handles;
+    try
+        %Get the corresponding frame
+        A_rcs = data.A_rcs;
         correspondFrame = A_rcs(:,:,firstIdx);
         imshow(mat2gray(correspondFrame), 'Parent', handles.axes1);
         set(handles.edit1, 'String', ['Frame #' num2str(firstIdx)])
@@ -187,21 +221,31 @@ function callbackClickA3DPoint(src, ~)
 
 
 function callbackGetSelectedData(src, ~)
+% Callback function for pixelwise correspondence (correspond reduced points 
+% to pixels in the reference brain map)
+% Inputs:
+%   src    handle of current figure
+    
+    %Get the brushed data from the scatter object
     data = src.UserData;
     brush_data = get(data.map_handle, 'BrushData');
+    %Find the corresponding pixel indicies
     brushed_idx = find(brush_data);
+    %Save the indicies in the data struct
     data.brushed = brushed_idx;
+    %Update the UserData
     src.UserData = data;
     handles = data.handles;
-    try
+    
+    try %Try to highlight the corresponding pixels in the reference brain map
         curObj = get(handles.output, 'UserData');
         xy_sub = curObj.xy_sub;
         %imshow(mat2gray(A_mean), 'Parent', handles.axes1);
-        A_mean = curObj.A_ref;
-        imshow(mat2gray(A_mean), 'Parent', handles.axes1);
+        %A_mean = curObj.A_ref;
+        %imshow(mat2gray(A_mean), 'Parent', handles.axes1);
         hold(handles.axes1, 'on');
         plot(handles.axes1,xy_sub(brushed_idx,2),xy_sub(brushed_idx,1),'r.')
-        hold(handles.axes1, 'off');
+        %hold(handles.axes1, 'off');
     catch
         warning('Can not load xy subscripts!')
     end
@@ -246,6 +290,9 @@ function pushbutton2_Callback(hObject, eventdata, handles)
 % hObject    handle to pushbutton2 (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
+% Pushbutton to run the runCorrespondMaps function
+
+% Get the dimReduction object
 curObj = get(handles.output, 'UserData');
 tflag = curObj.tflag;
 mapflag = get(handles.popupmenu1, 'Value');
@@ -280,3 +327,18 @@ function popupmenu1_CreateFcn(hObject, eventdata, handles)
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
+
+
+% --- Executes on button press in pushbutton3.
+function pushbutton3_Callback(hObject, eventdata, handles)
+% hObject    handle to pushbutton3 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+% Pushbutton to renew/reset the reference map
+
+% Get the dimReduction object
+curObj = get(handles.output, 'UserData');
+% Reset the reference map
+A_mean = curObj.A_ref;
+imshow(mat2gray(A_mean), 'Parent', handles.axes1);
+hold(handles.axes1, 'on');
