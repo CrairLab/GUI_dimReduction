@@ -10,4 +10,5 @@ b.	CorrespondMaps.m and CorrespondMaps.fig: GUI that allows visualization of cor
 c.	MovieData and dimReduction classes: contain functions that will be called by the GUI_dimReduction and CorrespondMaps (e.g. functions that actually calculate t-SNE and diffusion map)
 Run the GUI_dimReduction.m in matlab
    
-II.	Workflow: See workflow.pdf
+II.	Workflow: 
+See workflow.pptx
