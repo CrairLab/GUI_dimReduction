@@ -776,4 +776,5 @@ else
     methodtag = '_Pixelwise_';
 end
 
+%save(['dimReduction' methodtag paramtag timetag '.mat'],'curObj', '-v7.3')
 uisave('curObj', ['dimReduction' methodtag paramtag timetag '.mat'])
