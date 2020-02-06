@@ -61,6 +61,28 @@ handles.output = hObject;
 % Update handles structure
 guidata(hObject, handles);
 
+%Get the plotCorrObj from the main GUI (Manuvent_corr)
+if ~isempty(findobj('Tag', 'LineMapScan'))
+    MC_h = findobj('Tag', 'LineMapScan');
+    MC_data = guidata(MC_h);
+    LineMapObj = get(MC_data.Load_line, 'UserData');
+    
+    Avg_line = LineMapObj.Avg_line;
+    Avg_line = reshape(Avg_line', [1, size(Avg_line,2), size(Avg_line,1)]);
+    
+    handles.pushbutton8.UserData.filename = LineMapObj.filename;
+    handles.pushbutton1.UserData = Avg_line;
+    
+    set(handles.edit5, 'Visible', 'On')
+    set(handles.edit5, 'String', 'Loaded from LineMapScan')
+    clear LineMapObj;
+    
+    disp('Loaded object from GUI LineMapScan!')
+end
+    
+    
+    
+
 % UIWAIT makes GUI_dimReduction wait for user response (see UIRESUME)
 % uiwait(handles.figure1);
 
