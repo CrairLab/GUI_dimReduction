@@ -25,7 +25,7 @@ function varargout = CorrespondMaps(varargin)
 
 % Edit the above text to modify the response to help CorrespondMaps
 
-% Last Modified by GUIDE v2.5 21-Jun-2019 14:45:39
+% Last Modified by GUIDE v2.5 08-Feb-2020 17:02:09
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -56,6 +56,14 @@ function CorrespondMaps_OpeningFcn(hObject, eventdata, handles, varargin)
 % varargin   command line arguments to CorrespondMaps (see VARARGIN)
 
 % Choose default command line output for CorrespondMaps
+
+% Choose default command line output for CorrespondMaps
+handles.output = hObject;
+
+% Update handles structure
+guidata(hObject, handles);
+
+
 if size(varargin,1) > 0
     try
         curObj = varargin{1};
@@ -65,10 +73,22 @@ if size(varargin,1) > 0
     end
 end
 
-handles.output = hObject;
+if ~isempty(findobj('Tag', 'GUI_dimReduction'))
+    %Load data from GUI_dimReduction
+    dimR_h = findobj('Tag', 'GUI_dimReduction');
+    dimR_data = guidata(dimR_h);
+    dimRObj = get(dimR_data.output, 'UserData');
+    handles.output.UserData = dimRObj;
+    %Show status
+    set(handles.Show_status, 'ForegroundColor', 'Red')
+    handles.Show_status.String = 'Loaded object from GUI_dimReduction';
+    % Show reference brain map at axes1
+    A_mean = dimRObj.A_ref;
+    imshow(mat2gray(A_mean), 'Parent', handles.axes1);
+    hold(handles.axes1, 'on');
+end
 
-% Update handles structure
-guidata(hObject, handles);
+
 
 % UIWAIT makes CorrespondMaps wait for user response (see UIRESUME)
 % uiwait(handles.figure1);
@@ -85,9 +105,9 @@ function varargout = CorrespondMaps_OutputFcn(hObject, eventdata, handles)
 varargout{1} = handles.output;
 
 
-% --- Executes on button press in pushbutton1.
-function pushbutton1_Callback(hObject, eventdata, handles)
-% hObject    handle to pushbutton1 (see GCBO)
+% --- Executes on button press in Load_dimReductionObj.
+function Load_dimReductionObj_Callback(hObject, eventdata, handles)
+% hObject    handle to Load_dimReductionObj (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 % Pushbutton to load dimReduction object from the main GUI or from .mat file
@@ -96,7 +116,7 @@ if isempty(get(handles.output, 'UserData')) %If no input from the main GUI
     try
         uiopen('Please load a dimReduction object'); %Try load .mat file
         %Show progress
-        set(handles.edit1, 'String', 'Object loaded from dialog window!')        
+        set(handles.Show_status, 'String', 'Object loaded from dialog window!')        
     catch
         warning('Please load a dimReduction object')
     end
@@ -112,10 +132,10 @@ if isempty(get(handles.output, 'UserData')) %If no input from the main GUI
     end
 else
     %Show progress
-    set(handles.edit1, 'String', 'Object loaded from previous GUI!')   
+    set(handles.Show_status, 'String', 'Object loaded from GUI_dimReduction!')   
 end
 
-set(handles.edit1, 'ForegroundColor', 'Red' )
+set(handles.Show_status, 'ForegroundColor', 'Red')
 
 function runCorrespondMaps(curObj, handles, methodflag, mapflag)
 % Correspond dimReduction map with reference brain map or frame(s)
@@ -135,9 +155,10 @@ imshow(mat2gray(A_mean), 'Parent', handles.axes1);
 hold(handles.axes1, 'on');
 
 % Choose which map to plot
-if mapflag == 1
+switch mapflag
+    case 1
     Embedding = curObj.Y;
-elseif mapflag == 2
+    case 2
     Embedding = curObj.Dmap;
 end
 
@@ -213,7 +234,7 @@ function callbackClickA3DPoint(src, ~)
         A_rcs = data.A_rcs;
         correspondFrame = A_rcs(:,:,firstIdx);
         imshow(mat2gray(correspondFrame), 'Parent', handles.axes1);
-        set(handles.edit1, 'String', ['Frame #' num2str(firstIdx)])
+        set(handles.Show_status, 'String', ['Frame #' num2str(firstIdx)])
     catch
         warning('Can not display corresponding frame!')
     end
@@ -252,9 +273,9 @@ function callbackGetSelectedData(src, ~)
 
 
 % --- If Enable == 'on', executes on mouse press in 5 pixel border.
-% --- Otherwise, executes on mouse press in 5 pixel border or over pushbutton1.
-function pushbutton1_ButtonDownFcn(hObject, eventdata, handles)
-% hObject    handle to pushbutton1 (see GCBO)
+% --- Otherwise, executes on mouse press in 5 pixel border or over Load_dimReductionObj.
+function Load_dimReductionObj_ButtonDownFcn(hObject, eventdata, handles)
+% hObject    handle to Load_dimReductionObj (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
@@ -263,18 +284,18 @@ function pushbutton1_ButtonDownFcn(hObject, eventdata, handles)
 
 
 
-function edit1_Callback(hObject, eventdata, handles)
-% hObject    handle to edit1 (see GCBO)
+function Show_status_Callback(hObject, eventdata, handles)
+% hObject    handle to Show_status (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-% Hints: get(hObject,'String') returns contents of edit1 as text
-%        str2double(get(hObject,'String')) returns contents of edit1 as a double
+% Hints: get(hObject,'String') returns contents of Show_status as text
+%        str2double(get(hObject,'String')) returns contents of Show_status as a double
 
 
 % --- Executes during object creation, after setting all properties.
-function edit1_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to edit1 (see GCBO)
+function Show_status_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to Show_status (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    empty - handles not created until after all CreateFcns called
 
@@ -285,9 +306,9 @@ if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgr
 end
 
 
-% --- Executes on button press in pushbutton2.
-function pushbutton2_Callback(hObject, eventdata, handles)
-% hObject    handle to pushbutton2 (see GCBO)
+% --- Executes on button press in Run_correspond.
+function Run_correspond_Callback(hObject, eventdata, handles)
+% hObject    handle to Run_correspond (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 % Pushbutton to run the runCorrespondMaps function
@@ -295,30 +316,30 @@ function pushbutton2_Callback(hObject, eventdata, handles)
 % Get the dimReduction object
 curObj = get(handles.output, 'UserData');
 tflag = curObj.tflag;
-mapflag = get(handles.popupmenu1, 'Value');
+mapflag = get(handles.Choose_type, 'Value');
 
 if tflag == 0 %Pixelwise
-    set(handles.edit1, 'String', 'Pixelwise correspondence!')
+    set(handles.Show_status, 'String', 'Pixelwise correspondence!')
 elseif tflag == 1 %Framewise
-    set(handles.edit1, 'String', 'Framewise correspondence!')
+    set(handles.Show_status, 'String', 'Framewise correspondence!')
 end
 
 runCorrespondMaps(curObj, handles, tflag, mapflag)
 
 
-% --- Executes on selection change in popupmenu1.
-function popupmenu1_Callback(hObject, eventdata, handles)
-% hObject    handle to popupmenu1 (see GCBO)
+% --- Executes on selection change in Choose_type.
+function Choose_type_Callback(hObject, eventdata, handles)
+% hObject    handle to Choose_type (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-% Hints: contents = cellstr(get(hObject,'String')) returns popupmenu1 contents as cell array
-%        contents{get(hObject,'Value')} returns selected item from popupmenu1
+% Hints: contents = cellstr(get(hObject,'String')) returns Choose_type contents as cell array
+%        contents{get(hObject,'Value')} returns selected item from Choose_type
 
 
 % --- Executes during object creation, after setting all properties.
-function popupmenu1_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to popupmenu1 (see GCBO)
+function Choose_type_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to Choose_type (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    empty - handles not created until after all CreateFcns called
 
@@ -329,9 +350,9 @@ if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgr
 end
 
 
-% --- Executes on button press in pushbutton3.
-function pushbutton3_Callback(hObject, eventdata, handles)
-% hObject    handle to pushbutton3 (see GCBO)
+% --- Executes on button press in Renew_axes.
+function Renew_axes_Callback(hObject, eventdata, handles)
+% hObject    handle to Renew_axes (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 % Pushbutton to renew/reset the reference map
@@ -340,5 +361,95 @@ function pushbutton3_Callback(hObject, eventdata, handles)
 curObj = get(handles.output, 'UserData');
 % Reset the reference map
 A_mean = curObj.A_ref;
+hold(handles.axes1, 'off');
 imshow(mat2gray(A_mean), 'Parent', handles.axes1);
 hold(handles.axes1, 'on');
+
+
+% --- Executes on button press in Run_Kmeans.
+function Run_Kmeans_Callback(hObject, eventdata, handles)
+% hObject    handle to Run_Kmeans (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+handles.Show_status.String = 'Running Kmeans analysis!';
+curObj = handles.output.UserData;
+
+%Choose which type of data to use;
+mapflag = get(handles.Choose_type, 'Value');
+
+
+checkname = ['Kmeans_result_' num2str(mapflag) '*'];
+
+if isempty(dir(checkname))
+    switch mapflag
+    case 1
+        Embedding = curObj.Y;
+    case 2
+        A_rd = curObj.A_rd;
+        %Redo diffusion map analysis using information from all dims
+        Dmap = dimReduction.diffmap(A_rd, 2, size(A_rd,1)-1, []);
+        Embedding = Dmap;
+    end    
+    
+    %Kmeans 20 replicates
+    Kmeans_20 = @(X,K)(kmeans(X, K, 'emptyaction','drop',...
+        'replicate',20));
+    All_K = [];
+    
+    %Evaluate using DaviesBouldin 20 times to get the best K
+    for i = 1:20
+        cur_eva = evalclusters(Embedding,Kmeans_20,'DaviesBouldin','KList',[1:15]);
+        All_K(i) = cur_eva.OptimalK;
+        disp([num2str(i) 'th evaluation...'])
+    end
+    OptimalK = mode(All_K);
+    disp(['Best K identified by Davies-Bouldin is: ' num2str(OptimalK)]);
+    handles.Show_status.String = ['Best K is: ' num2str(OptimalK)];
+
+    %Kmeans 100 replicates
+    Kmeans_100 = @(X,K)(kmeans(X, K, 'emptyaction','drop',...
+        'replicate',100));
+    %Revaluate using optimal K and 100 replicates
+    OptimalK_eva = evalclusters(Embedding,Kmeans_100,'DaviesBouldin','KList',[1:15]);
+    [idx,C] = Kmeans_100(Embedding,OptimalK);
+    c = clock;
+    timetag = ['_' num2str(c(1)) num2str(c(2)) num2str(c(3)) num2str(c(4)) num2str(c(5))];
+    
+else
+    tmp = dir(checkname);
+    load(fullfile(tmp.folder,tmp.name))
+end
+
+K_colormap = jet(OptimalK);
+try %Try to highlight the corresponding pixels in the reference brain map
+        xy_sub = curObj.xy_sub;
+        
+        %Construct representative trace for each cluster
+        A_rd = curObj.A_rd;
+        Rep_traces = nan(OptimalK, size(A_rd,2));
+        for k = 1:OptimalK
+            cur_color = K_colormap(k,:);
+            cur_cluster = [idx == k];
+            set(handles.figure1,'CurrentAxes',handles.axes1)
+            hold(handles.axes1, 'on');
+            scatter(xy_sub(cur_cluster,2),xy_sub(cur_cluster,1),...
+                20, cur_color, 'filled')            
+            %Use the average of all the pixels in one cluster as
+            %representative trace
+            Rep_traces(k,:) = nanmean(A_rd(cur_cluster,:),1);
+        end
+        %colormap(handles.axes1,'jet')
+        hold(handles.axes1, 'off');
+        saveas(handles.figure1,['Clustering_result' timetag '.png'])
+        %hold(handles.axes1, 'off');
+catch
+    warning('Something wrong projecting Kmeans results back!')
+end
+
+if isempty(dir(checkname))
+    %Save useful variables
+    uisave({'idx', 'C', 'OptimalK', 'OptimalK_eva','Rep_traces', 'Embedding'...
+        , 'mapflag', 'timetag'}, ['Kmeans_result_' num2str(mapflag) timetag '.mat'])
+end
+

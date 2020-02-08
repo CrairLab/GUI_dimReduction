@@ -25,7 +25,7 @@ function varargout = GUI_dimReduction(varargin)
 
 % Edit the above text to modify the response to help GUI_dimReduction
 
-% Last Modified by GUIDE v2.5 18-Jun-2019 20:21:43
+% Last Modified by GUIDE v2.5 06-Feb-2020 11:31:55
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -61,7 +61,7 @@ handles.output = hObject;
 % Update handles structure
 guidata(hObject, handles);
 
-%Get the plotCorrObj from the main GUI (Manuvent_corr)
+%Get the plotCorrObj from the main GUI (LineMapScan)
 if ~isempty(findobj('Tag', 'LineMapScan'))
     MC_h = findobj('Tag', 'LineMapScan');
     MC_data = guidata(MC_h);
@@ -70,11 +70,11 @@ if ~isempty(findobj('Tag', 'LineMapScan'))
     Avg_line = LineMapObj.Avg_line;
     Avg_line = reshape(Avg_line', [1, size(Avg_line,2), size(Avg_line,1)]);
     
-    handles.pushbutton8.UserData.filename = LineMapObj.filename;
-    handles.pushbutton1.UserData = Avg_line;
+    handles.Save_dimReduction.UserData.filename = LineMapObj.filename;
+    handles.Load_movie.UserData = Avg_line;
     
-    set(handles.edit5, 'Visible', 'On')
-    set(handles.edit5, 'String', 'Loaded from LineMapScan')
+    set(handles.Report_progres, 'Visible', 'On')
+    set(handles.Report_progres, 'String', 'Loaded from LineMapScan')
     clear LineMapObj;
     
     disp('Loaded object from GUI LineMapScan!')
@@ -84,7 +84,7 @@ end
     
 
 % UIWAIT makes GUI_dimReduction wait for user response (see UIRESUME)
-% uiwait(handles.figure1);
+% uiwait(handles.GUI_dimReduction);
 
 
 % --- Outputs from this function are returned to the command line.
@@ -98,16 +98,16 @@ function varargout = GUI_dimReduction_OutputFcn(hObject, eventdata, handles)
 varargout{1} = handles.output;
 
 
-% --- Executes on button press in pushbutton1.
-function pushbutton1_Callback(hObject, eventdata, handles)
-% hObject    handle to pushbutton1 (see GCBO)
+% --- Executes on button press in Load_movie.
+function Load_movie_Callback(hObject, eventdata, handles)
+% hObject    handle to Load_movie (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 % Load movie button.
 
     %load dFoF movie using uiopen
-    set(handles.edit5, 'Visible', 'On')
-    set(handles.edit5, 'String', 'Loading...')
+    set(handles.Report_progres, 'Visible', 'On')
+    set(handles.Report_progres, 'String', 'Loading...')
     
     uiopen('Please load the 3D dF over F movie!')
     
@@ -119,24 +119,24 @@ function pushbutton1_Callback(hObject, eventdata, handles)
             if length(vList(i).size) == 3 
                 curMovie = eval(vList(i).name);
                 hObject.UserData = curMovie;
-                set(handles.edit5, 'String', 'Finished!')
+                set(handles.Report_progres, 'String', 'Finished!')
                 break
             end
         end  
     catch
-        set(handles.edit5, 'String', 'Error!')
+        set(handles.Report_progres, 'String', 'Error!')
         warning('Can not load the dF over F movie!')        
     end
 
-% --- Executes on selection change in popupmenu1.
-function popupmenu1_Callback(hObject, eventdata, handles)
-% hObject    handle to popupmenu1 (see GCBO)
+% --- Executes on selection change in Choose_type.
+function Choose_type_Callback(hObject, eventdata, handles)
+% hObject    handle to Choose_type (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 % Popupmenu to choose whether do pixelwise or framewise analysis
 
 %Load existed initial parameters
-iniParameters = get(handles.pushbutton2, 'UserData');
+iniParameters = get(handles.Use_default, 'UserData');
 contents = cellstr(get(hObject, 'String'));
 curString = contents{get(hObject,'Value')};
 if strcmp(curString, 'Pixelwise')
@@ -146,15 +146,15 @@ elseif strcmp(curString, 'Framewise')
 end
 
 %Update initial parameters
-set(handles.pushbutton2, 'UserData', iniParameters);
+set(handles.Use_default, 'UserData', iniParameters);
 
-% Hints: contents = cellstr(get(hObject,'String')) returns popupmenu1 contents as cell array
-%        contents{get(hObject,'Value')} returns selected item from popupmenu1    
+% Hints: contents = cellstr(get(hObject,'String')) returns Choose_type contents as cell array
+%        contents{get(hObject,'Value')} returns selected item from Choose_type    
     
 
 % --- Executes during object creation, after setting all properties.
-function popupmenu1_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to popupmenu1 (see GCBO)
+function Choose_type_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to Choose_type (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    empty - handles not created until after all CreateFcns called
 
@@ -165,9 +165,9 @@ if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgr
 end
 
 
-% --- Executes on key press with focus on popupmenu1 and none of its controls.
-function popupmenu1_KeyPressFcn(hObject, eventdata, handles)
-% hObject    handle to popupmenu1 (see GCBO)
+% --- Executes on key press with focus on Choose_type and none of its controls.
+function Choose_type_KeyPressFcn(hObject, eventdata, handles)
+% hObject    handle to Choose_type (see GCBO)
 % eventdata  structure with the following fields (see MATLAB.UI.CONTROL.UICONTROL)
 %	Key: name of the key that was pressed, in lower case
 %	Character: character interpretation of the key(s) that was pressed
@@ -175,15 +175,15 @@ function popupmenu1_KeyPressFcn(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 
 
-% --- Executes on button press in pushbutton1.
-function pushbutton4_Callback(hObject, eventdata, handles)
-% hObject    handle to pushbutton1 (see GCBO)
+% --- Executes on button press in Load_movie.
+function Load_dimReduction_Callback(hObject, eventdata, handles)
+% hObject    handle to Load_movie (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 % Pushbutton to load an existed dimReduction object
 
-set(handles.edit13, 'Visible', 'On')
-set(handles.edit13, 'String', 'Wait')
+set(handles.Load_status, 'Visible', 'On')
+set(handles.Load_status, 'String', 'Wait')
 
 %Open a saved dimReduction object using dialog window
 try
@@ -198,7 +198,7 @@ for i = 1:size(vList,1)
     if strcmp(vList(i).class, 'dimReduction')
         curObj = eval(vList(i).name);
         set(handles.output, 'UserData', curObj)
-        set(handles.edit13, 'Visible', 'Off')
+        set(handles.Load_status, 'Visible', 'Off')
         break
     end
 end
@@ -210,19 +210,19 @@ displayParam(curObj, handles);
 %Plot tSNE and diffusion map
 plotAxes(curObj, handles);
 
-% --- Executes on selection change in popupmenu1.
+% --- Executes on selection change in Choose_type.
 function popupmenu2_Callback(hObject, eventdata, handles)
-% hObject    handle to popupmenu1 (see GCBO)
+% hObject    handle to Choose_type (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-% Hints: contents = cellstr(get(hObject,'String')) returns popupmenu1 contents as cell array
-%        contents{get(hObject,'Value')} returns selected item from popupmenu1
+% Hints: contents = cellstr(get(hObject,'String')) returns Choose_type contents as cell array
+%        contents{get(hObject,'Value')} returns selected item from Choose_type
 
 
 % --- Executes during object creation, after setting all properties.
 function popupmenu2_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to popupmenu1 (see GCBO)
+% hObject    handle to Choose_type (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    empty - handles not created until after all CreateFcns called
 
@@ -233,9 +233,9 @@ if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgr
 end
 
 
-% --- Executes on button press in pushbutton2.
-function pushbutton2_Callback(hObject, eventdata, handles)
-% hObject    handle to pushbutton2 (see GCBO)
+% --- Executes on button press in Use_default.
+function Use_default_Callback(hObject, eventdata, handles)
+% hObject    handle to Use_default (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 % Pushbutton to load default parameters
@@ -243,56 +243,56 @@ function pushbutton2_Callback(hObject, eventdata, handles)
 %Set default parameters
 %pixelwise analysis
 iniParameters.tflag = 0;
-set(handles.popupmenu1,'Value',2);
+set(handles.Choose_type,'Value',2);
 %Do not constraint on location
 iniParameters.locflag = 0;
-set(handles.checkbox1,'Value',0);
+set(handles.Constrain_loc,'Value',0);
 iniParameters.locfactor = 0;
-set(handles.edit2,'String',num2str(0));
-set(handles.edit1,'Value',0);
+set(handles.Spatial_factor,'String',num2str(0));
+set(handles.Constrain_coeff,'Value',0);
 %Downsample by 2 both temporally and spatially
 iniParameters.fd = [2, 2];
-set(handles.edit2,'Value',2);
-set(handles.edit2,'String',num2str(2));
-set(handles.edit3,'Value',2);
-set(handles.edit3,'String',num2str(2));
+set(handles.Spatial_factor,'Value',2);
+set(handles.Spatial_factor,'String',num2str(2));
+set(handles.Temporal_factor,'Value',2);
+set(handles.Temporal_factor,'String',num2str(2));
 %Save default parameters;
 hObject.UserData = iniParameters;
 
 
 
-% --- Executes on button press in checkbox1.
-function checkbox1_Callback(hObject, eventdata, handles)
-% hObject    handle to checkbox1 (see GCBO)
+% --- Executes on button press in Constrain_loc.
+function Constrain_loc_Callback(hObject, eventdata, handles)
+% hObject    handle to Constrain_loc (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 % Checkbox to choose whether inject location information into analysis
 
-% Hint: get(hObject,'Value') returns toggle state of checkbox1
-iniParameters = get(handles.pushbutton2, 'UserData');
+% Hint: get(hObject,'Value') returns toggle state of Constrain_loc
+iniParameters = get(handles.Use_default, 'UserData');
 curValue = get(hObject, 'Value');
 if curValue == 0 
         iniParameters.locflag = 0;
 elseif curValue == 1
         iniParameters.locflag = 1;
 end
-set(handles.pushbutton2, 'UserData', iniParameters);
+set(handles.Use_default, 'UserData', iniParameters);
 
 
-function edit1_Callback(hObject, eventdata, handles)
-% hObject    handle to edit1 (see GCBO)
+function Constrain_coeff_Callback(hObject, eventdata, handles)
+% hObject    handle to Constrain_coeff (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-% Hints: get(hObject,'String') returns contents of edit1 as text
-%        str2double(get(hObject,'String')) returns contents of edit1 as a double
-iniParameters = get(handles.pushbutton2, 'UserData');
+% Hints: get(hObject,'String') returns contents of Constrain_coeff as text
+%        str2double(get(hObject,'String')) returns contents of Constrain_coeff as a double
+iniParameters = get(handles.Use_default, 'UserData');
 iniParameters.locfactor = str2double(get(hObject, 'String'));
-set(handles.pushbutton2, 'UserData', iniParameters);
+set(handles.Use_default, 'UserData', iniParameters);
 
 % --- Executes during object creation, after setting all properties.
-function edit1_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to edit1 (see GCBO)
+function Constrain_coeff_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to Constrain_coeff (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    empty - handles not created until after all CreateFcns called
 
@@ -303,28 +303,28 @@ if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgr
 end
 
 
-% --- Executes on button press in pushbutton3.
-function pushbutton3_Callback(hObject, eventdata, handles)
-% hObject    handle to pushbutton3 (see GCBO)
+% --- Executes on button press in Run_dimReduction.
+function Run_dimReduction_Callback(hObject, eventdata, handles)
+% hObject    handle to Run_dimReduction (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 % Pushbutton to run dimReduction analysis/construct dimReduction object
 
 %Show progress
-set(handles.edit4, 'Visible', 'On')
-set(handles.edit4, 'String', 'Running...')
+set(handles.Run_status, 'Visible', 'On')
+set(handles.Run_status, 'String', 'Running...')
 
 %Load parameters
-param = get(handles.pushbutton2, 'UserData');
-curMovie = get(handles.pushbutton1, 'UserData');
+param = get(handles.Use_default, 'UserData');
+curMovie = get(handles.Load_movie, 'UserData');
 
 %Run dimReduction
 try
     curObj = dimReduction(curMovie, param.tflag, param.locflag,...
         param.locfactor, param.fd);
-    set(handles.edit4, 'String', 'Finished!')
+    set(handles.Run_status, 'String', 'Finished!')
 catch
-    set(handles.edit4, 'String', 'Error!')
+    set(handles.Run_status, 'String', 'Error!')
 end
 set(handles.output, 'UserData', curObj);
 
@@ -334,20 +334,20 @@ displayParam(curObj, handles)
 %Plot tSNE and diffusion map
 plotAxes(curObj, handles);
 
-function edit2_Callback(hObject, eventdata, handles)
-% hObject    handle to edit2 (see GCBO)
+function Spatial_factor_Callback(hObject, eventdata, handles)
+% hObject    handle to Spatial_factor (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-% Hints: get(hObject,'String') returns contents of edit2 as text
-%        str2double(get(hObject,'String')) returns contents of edit2 as a double
-iniParameters = get(handles.pushbutton2, 'UserData');
+% Hints: get(hObject,'String') returns contents of Spatial_factor as text
+%        str2double(get(hObject,'String')) returns contents of Spatial_factor as a double
+iniParameters = get(handles.Use_default, 'UserData');
 iniParameters.fd(1) = str2double(get(hObject, 'String'));
-set(handles.pushbutton2, 'UserData', iniParameters);
+set(handles.Use_default, 'UserData', iniParameters);
 
 % --- Executes during object creation, after setting all properties.
-function edit2_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to edit2 (see GCBO)
+function Spatial_factor_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to Spatial_factor (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    empty - handles not created until after all CreateFcns called
 
@@ -359,20 +359,20 @@ end
 
 
 
-function edit3_Callback(hObject, eventdata, handles)
-% hObject    handle to edit3 (see GCBO)
+function Temporal_factor_Callback(hObject, eventdata, handles)
+% hObject    handle to Temporal_factor (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-% Hints: get(hObject,'String') returns contents of edit3 as text
-%        str2double(get(hObject,'String')) returns contents of edit3 as a double
-iniParameters = get(handles.pushbutton2, 'UserData');
+% Hints: get(hObject,'String') returns contents of Temporal_factor as text
+%        str2double(get(hObject,'String')) returns contents of Temporal_factor as a double
+iniParameters = get(handles.Use_default, 'UserData');
 iniParameters.fd(2) = str2double(get(hObject, 'String'));
-set(handles.pushbutton2, 'UserData', iniParameters);
+set(handles.Use_default, 'UserData', iniParameters);
 
 % --- Executes during object creation, after setting all properties.
-function edit3_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to edit3 (see GCBO)
+function Temporal_factor_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to Temporal_factor (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    empty - handles not created until after all CreateFcns called
 
@@ -384,8 +384,8 @@ end
 
 
 % --- Executes during object creation, after setting all properties.
-function pushbutton2_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to pushbutton2 (see GCBO)
+function Use_default_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to Use_default (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    empty - handles not created until after all CreateFcns called
 % Pushbutton to load default parameters
@@ -400,18 +400,18 @@ hObject.UserData = iniParameters;
 
 
 
-function edit8_Callback(hObject, eventdata, handles)
-% hObject    handle to edit8 (see GCBO)
+function tSNE_status_Callback(hObject, eventdata, handles)
+% hObject    handle to tSNE_status (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-% Hints: get(hObject,'String') returns contents of edit8 as text
-%        str2double(get(hObject,'String')) returns contents of edit8 as a double
+% Hints: get(hObject,'String') returns contents of tSNE_status as text
+%        str2double(get(hObject,'String')) returns contents of tSNE_status as a double
 
 
 % --- Executes during object creation, after setting all properties.
-function edit8_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to edit8 (see GCBO)
+function tSNE_status_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to tSNE_status (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    empty - handles not created until after all CreateFcns called
 
@@ -423,18 +423,18 @@ end
 
 
 
-function edit4_Callback(hObject, eventdata, handles)
-% hObject    handle to edit4 (see GCBO)
+function Run_status_Callback(hObject, eventdata, handles)
+% hObject    handle to Run_status (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-% Hints: get(hObject,'String') returns contents of edit4 as text
-%        str2double(get(hObject,'String')) returns contents of edit4 as a double
+% Hints: get(hObject,'String') returns contents of Run_status as text
+%        str2double(get(hObject,'String')) returns contents of Run_status as a double
 
 
 % --- Executes during object creation, after setting all properties.
-function edit4_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to edit4 (see GCBO)
+function Run_status_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to Run_status (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    empty - handles not created until after all CreateFcns called
 
@@ -446,18 +446,18 @@ end
 
 
 
-function edit5_Callback(hObject, eventdata, handles)
-% hObject    handle to edit5 (see GCBO)
+function Report_progres_Callback(hObject, eventdata, handles)
+% hObject    handle to Report_progres (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-% Hints: get(hObject,'String') returns contents of edit5 as text
-%        str2double(get(hObject,'String')) returns contents of edit5 as a double
+% Hints: get(hObject,'String') returns contents of Report_progres as text
+%        str2double(get(hObject,'String')) returns contents of Report_progres as a double
 
 
 % --- Executes during object creation, after setting all properties.
-function edit5_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to edit5 (see GCBO)
+function Report_progres_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to Report_progres (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    empty - handles not created until after all CreateFcns called
 
@@ -469,18 +469,18 @@ end
 
 
 
-function edit6_Callback(hObject, eventdata, handles)
-% hObject    handle to edit6 (see GCBO)
+function tSNE_perplexity_Callback(hObject, eventdata, handles)
+% hObject    handle to tSNE_perplexity (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-% Hints: get(hObject,'String') returns contents of edit6 as text
-%        str2double(get(hObject,'String')) returns contents of edit6 as a double
+% Hints: get(hObject,'String') returns contents of tSNE_perplexity as text
+%        str2double(get(hObject,'String')) returns contents of tSNE_perplexity as a double
 
 
 % --- Executes during object creation, after setting all properties.
-function edit6_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to edit6 (see GCBO)
+function tSNE_perplexity_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to tSNE_perplexity (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    empty - handles not created until after all CreateFcns called
 
@@ -492,18 +492,18 @@ end
 
 
 
-function edit7_Callback(hObject, eventdata, handles)
-% hObject    handle to edit7 (see GCBO)
+function tSNE_Exaggeration_Callback(hObject, eventdata, handles)
+% hObject    handle to tSNE_Exaggeration (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-% Hints: get(hObject,'String') returns contents of edit7 as text
-%        str2double(get(hObject,'String')) returns contents of edit7 as a double
+% Hints: get(hObject,'String') returns contents of tSNE_Exaggeration as text
+%        str2double(get(hObject,'String')) returns contents of tSNE_Exaggeration as a double
 
 
 % --- Executes during object creation, after setting all properties.
-function edit7_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to edit7 (see GCBO)
+function tSNE_Exaggeration_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to tSNE_Exaggeration (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    empty - handles not created until after all CreateFcns called
 
@@ -514,21 +514,21 @@ if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgr
 end
 
 
-% --- Executes on button press in pushbutton5.
-function pushbutton5_Callback(hObject, eventdata, handles)
-% hObject    handle to pushbutton5 (see GCBO)
+% --- Executes on button press in tSNE_Renew.
+function tSNE_Renew_Callback(hObject, eventdata, handles)
+% hObject    handle to tSNE_Renew (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 % Pushbutton to renew tSNE analysis using new parameters
 
 %Show progress
-set(handles.edit8, 'Visible', 'On')
-set(handles.edit8, 'String', 'Running...')
+set(handles.tSNE_status, 'Visible', 'On')
+set(handles.tSNE_status, 'String', 'Running...')
 
 %Load renewed parameters
-tParam = get(handles.uipanel2, 'UserData');
-tParam.px = str2double(get(handles.edit6, 'String'));
-tParam.Exaggeration = str2double(get(handles.edit7, 'String'));
+tParam = get(handles.tSNE_control, 'UserData');
+tParam.px = str2double(get(handles.tSNE_perplexity, 'String'));
+tParam.Exaggeration = str2double(get(handles.tSNE_Exaggeration, 'String'));
 contents = cellstr(get(handles.popupmenu2, 'String'));
 curString = contents{get(handles.popupmenu2,'Value')};
 tParam.Distance = curString;
@@ -539,7 +539,7 @@ curObj = get(handles.output, 'UserData');
 curObj.tParam = tParam;
 curObj.Y = dimReduction.doTSNE(curObj.A_rd, tParam);
 set(handles.output, 'UserData', curObj);
-set(handles.edit8, 'String', 'Finished!')
+set(handles.tSNE_status, 'String', 'Finished!')
 
 %Redisplay parameters;
 displayParam(curObj, handles);
@@ -549,8 +549,8 @@ plotAxes(curObj, handles);
 
 
 % --- Executes during object creation, after setting all properties.
-function uipanel2_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to uipanel2 (see GCBO)
+function tSNE_control_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to tSNE_control (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    empty - handles not created until after all CreateFcns called
 % Load default tSNE parameters
@@ -589,18 +589,18 @@ end
 
 
 
-function edit10_Callback(hObject, eventdata, handles)
-% hObject    handle to edit10 (see GCBO)
+function Dmap_dims_Callback(hObject, eventdata, handles)
+% hObject    handle to Dmap_dims (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-% Hints: get(hObject,'String') returns contents of edit10 as text
-%        str2double(get(hObject,'String')) returns contents of edit10 as a double
+% Hints: get(hObject,'String') returns contents of Dmap_dims as text
+%        str2double(get(hObject,'String')) returns contents of Dmap_dims as a double
 
 
 % --- Executes during object creation, after setting all properties.
-function edit10_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to edit10 (see GCBO)
+function Dmap_dims_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to Dmap_dims (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    empty - handles not created until after all CreateFcns called
 
@@ -612,18 +612,18 @@ end
 
 
 
-function edit11_Callback(hObject, eventdata, handles)
-% hObject    handle to edit11 (see GCBO)
+function Dmap_sigma_Callback(hObject, eventdata, handles)
+% hObject    handle to Dmap_sigma (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-% Hints: get(hObject,'String') returns contents of edit11 as text
-%        str2double(get(hObject,'String')) returns contents of edit11 as a double
+% Hints: get(hObject,'String') returns contents of Dmap_sigma as text
+%        str2double(get(hObject,'String')) returns contents of Dmap_sigma as a double
 
 
 % --- Executes during object creation, after setting all properties.
-function edit11_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to edit11 (see GCBO)
+function Dmap_sigma_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to Dmap_sigma (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    empty - handles not created until after all CreateFcns called
 
@@ -634,22 +634,22 @@ if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgr
 end
 
 
-% --- Executes on button press in pushbutton6.
-function pushbutton6_Callback(hObject, eventdata, handles)
-% hObject    handle to pushbutton6 (see GCBO)
+% --- Executes on button press in Dmap_Renew.
+function Dmap_Renew_Callback(hObject, eventdata, handles)
+% hObject    handle to Dmap_Renew (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 % Pushbutton to renew diffusion map analysis using new parameters
 
 %Show progress
-set(handles.edit12, 'Visible', 'On')
-set(handles.edit12, 'String', 'Running...')
+set(handles.Dmap_status, 'Visible', 'On')
+set(handles.Dmap_status, 'String', 'Running...')
 
 %Get renewed parameters
-dParam = get(handles.uipanel3, 'UserData');
+dParam = get(handles.Dmap_control, 'UserData');
 dParam.t = str2double(get(handles.edit9, 'String'));
-dParam.m = str2double(get(handles.edit10, 'String'));
-dParam.sigma = str2double(get(handles.edit11, 'String'));
+dParam.m = str2double(get(handles.Dmap_dims, 'String'));
+dParam.sigma = str2double(get(handles.Dmap_sigma, 'String'));
 set(hObject.Parent, 'UserData', dParam);
 
 %Redo diffusion map using new parameters
@@ -657,7 +657,7 @@ curObj = get(handles.output, 'UserData');
 [curObj.Dmap, curObj.dParam, ~] = ...
     dimReduction.diffmap(curObj.A_rd, dParam.t, dParam.m, dParam.sigma);
 set(handles.output, 'UserData', curObj);
-set(handles.edit12, 'String', 'Finished!')
+set(handles.Dmap_status, 'String', 'Finished!')
 
 %Redisplay parameters;
 displayParam(curObj, handles);
@@ -666,18 +666,18 @@ displayParam(curObj, handles);
 plotAxes(curObj, handles);
 
 
-function edit12_Callback(hObject, eventdata, handles)
-% hObject    handle to edit12 (see GCBO)
+function Dmap_status_Callback(hObject, eventdata, handles)
+% hObject    handle to Dmap_status (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-% Hints: get(hObject,'String') returns contents of edit12 as text
-%        str2double(get(hObject,'String')) returns contents of edit12 as a double
+% Hints: get(hObject,'String') returns contents of Dmap_status as text
+%        str2double(get(hObject,'String')) returns contents of Dmap_status as a double
 
 
 % --- Executes during object creation, after setting all properties.
-function edit12_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to edit12 (see GCBO)
+function Dmap_status_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to Dmap_status (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    empty - handles not created until after all CreateFcns called
 
@@ -689,8 +689,8 @@ end
 
 
 % --- Executes during object creation, after setting all properties.
-function uipanel3_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to uipanel3 (see GCBO)
+function Dmap_control_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to Dmap_control (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    empty - handles not created until after all CreateFcns called
 % Load default parameters for diffusion maps
@@ -708,18 +708,18 @@ function displayParam(curObj, handles)
 % handles    handles of UI components
 
 %Display parameters for dimReduction
-set(handles.popupmenu1,'Value', curObj.tflag + 2);
+set(handles.Choose_type,'Value', curObj.tflag + 2);
 %Do not constraint on location
-set(handles.checkbox1,'Value',curObj.locflag);
-set(handles.edit1,'Value',0);
+set(handles.Constrain_loc,'Value',curObj.locflag);
+set(handles.Constrain_coeff,'Value',0);
 %Downsample by 2 both temporally and spatially
-set(handles.edit2,'String',num2str(curObj.fd(1)));
-set(handles.edit3,'String',num2str(curObj.fd(2)));
+set(handles.Spatial_factor,'String',num2str(curObj.fd(1)));
+set(handles.Temporal_factor,'String',num2str(curObj.fd(2)));
 
 %Display tSNE parameters
 tParam = curObj.tParam;
-set(handles.edit6, 'String', num2str(tParam.px));
-set(handles.edit7, 'String', num2str(tParam.Exaggeration));
+set(handles.tSNE_perplexity, 'String', num2str(tParam.px));
+set(handles.tSNE_Exaggeration, 'String', num2str(tParam.Exaggeration));
 
 contents = cellstr(get(handles.popupmenu2,'String'));
 curVal = find(strcmp(contents, tParam.Distance));
@@ -728,8 +728,8 @@ set(handles.popupmenu2, 'Value', curVal);
 %Display diffusion map parameters
 dParam = curObj.dParam;
 set(handles.edit9, 'String', num2str(dParam.t));
-set(handles.edit10, 'String', num2str(dParam.m));
-set(handles.edit11, 'String', num2str(dParam.sigma));
+set(handles.Dmap_dims, 'String', num2str(dParam.m));
+set(handles.Dmap_sigma, 'String', num2str(dParam.sigma));
 
 
 
@@ -744,24 +744,24 @@ curY = curObj.Y;
 curDmap = curObj.Dmap;
 
 cmap = 1:size(curY,1);
-scatter3(handles.axes1, curY(:,1),curY(:,2),curY(:,3),[],cmap,'filled');
+scatter3(handles.tSNE_axes, curY(:,1),curY(:,2),curY(:,3),[],cmap,'filled');
 
 cmap = 1:size(curDmap,1);
-scatter3(handles.axes2, curDmap(:,1),curDmap(:,2),curDmap(:,3),[],cmap,'filled');
+scatter3(handles.Dmap_axes, curDmap(:,1),curDmap(:,2),curDmap(:,3),[],cmap,'filled');
 
 
-function edit13_Callback(hObject, eventdata, handles)
-% hObject    handle to edit13 (see GCBO)
+function Load_status_Callback(hObject, eventdata, handles)
+% hObject    handle to Load_status (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-% Hints: get(hObject,'String') returns contents of edit13 as text
-%        str2double(get(hObject,'String')) returns contents of edit13 as a double
+% Hints: get(hObject,'String') returns contents of Load_status as text
+%        str2double(get(hObject,'String')) returns contents of Load_status as a double
 
 
 % --- Executes during object creation, after setting all properties.
-function edit13_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to edit13 (see GCBO)
+function Load_status_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to Load_status (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    empty - handles not created until after all CreateFcns called
 
@@ -772,17 +772,16 @@ if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgr
 end
 
 
-% --- Executes on button press in pushbutton7.
-function pushbutton7_Callback(hObject, eventdata, handles)
-% hObject    handle to pushbutton7 (see GCBO)
+% --- Executes on button press in Correspond_maps.
+function Correspond_maps_Callback(hObject, eventdata, handles)
+% hObject    handle to Correspond_maps (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-curObj = get(handles.output, 'UserData');
-CorrespondMaps(curObj);
+CorrespondMaps();
 
-% --- Executes on button press in pushbutton8.
-function pushbutton8_Callback(hObject, eventdata, handles)
-% hObject    handle to pushbutton8 (see GCBO)
+% --- Executes on button press in Save_dimReduction.
+function Save_dimReduction_Callback(hObject, eventdata, handles)
+% hObject    handle to Save_dimReduction (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 % Pushbutton to save current dimReduction to a .mat files
