@@ -25,7 +25,7 @@ function varargout = CorrespondMaps(varargin)
 
 % Edit the above text to modify the response to help CorrespondMaps
 
-% Last Modified by GUIDE v2.5 08-Feb-2020 17:02:09
+% Last Modified by GUIDE v2.5 08-Feb-2020 17:34:43
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -86,6 +86,8 @@ if ~isempty(findobj('Tag', 'GUI_dimReduction'))
     A_mean = dimRObj.A_ref;
     imshow(mat2gray(A_mean), 'Parent', handles.axes1);
     hold(handles.axes1, 'on');
+    %Define default max K
+    handles.Max_K.String = '15';
 end
 
 
@@ -390,7 +392,14 @@ if isempty(dir(checkname))
         %Redo diffusion map analysis using information from all dims
         Dmap = dimReduction.diffmap(A_rd, 2, size(A_rd,1)-1, []);
         Embedding = Dmap;
-    end    
+    end
+    
+    if isnan(str2double(handles.Max_K.String))
+        msgbox('Please input a valid interger!')
+        return
+    else
+        Max_K = str2double(handles.Max_K.String);
+    end
     
     %Kmeans 20 replicates
     Kmeans_20 = @(X,K)(kmeans(X, K, 'emptyaction','drop',...
@@ -399,7 +408,7 @@ if isempty(dir(checkname))
     
     %Evaluate using DaviesBouldin 20 times to get the best K
     for i = 1:20
-        cur_eva = evalclusters(Embedding,Kmeans_20,'DaviesBouldin','KList',[1:15]);
+        cur_eva = evalclusters(Embedding,Kmeans_20,'DaviesBouldin','KList',[1:Max_K]);
         All_K(i) = cur_eva.OptimalK;
         disp([num2str(i) 'th evaluation...'])
     end
@@ -411,7 +420,7 @@ if isempty(dir(checkname))
     Kmeans_100 = @(X,K)(kmeans(X, K, 'emptyaction','drop',...
         'replicate',100));
     %Revaluate using optimal K and 100 replicates
-    OptimalK_eva = evalclusters(Embedding,Kmeans_100,'DaviesBouldin','KList',[1:15]);
+    OptimalK_eva = evalclusters(Embedding,Kmeans_100,'DaviesBouldin','KList',[1:Max_K]);
     [idx,C] = Kmeans_100(Embedding,OptimalK);
     c = clock;
     timetag = ['_' num2str(c(1)) num2str(c(2)) num2str(c(3)) num2str(c(4)) num2str(c(5))];
@@ -453,3 +462,25 @@ if isempty(dir(checkname))
         , 'mapflag', 'timetag'}, ['Kmeans_result_' num2str(mapflag) timetag '.mat'])
 end
 
+
+
+function Max_K_Callback(hObject, eventdata, handles)
+% hObject    handle to Max_K (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of Max_K as text
+%        str2double(get(hObject,'String')) returns contents of Max_K as a double
+
+
+% --- Executes during object creation, after setting all properties.
+function Max_K_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to Max_K (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
