@@ -25,7 +25,7 @@ function varargout = CorrespondMaps(varargin)
 
 % Edit the above text to modify the response to help CorrespondMaps
 
-% Last Modified by GUIDE v2.5 08-Feb-2020 17:34:43
+% Last Modified by GUIDE v2.5 09-Feb-2020 13:07:32
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -379,88 +379,68 @@ curObj = handles.output.UserData;
 
 %Choose which type of data to use;
 mapflag = get(handles.Choose_type, 'Value');
+switch mapflag
+case 1
+    Embedding = curObj.Y;
+case 2
+    A_rd = curObj.A_rd;
+    %Redo diffusion map analysis using information from all dims
+    Dmap = dimReduction.diffmap(A_rd, 2, size(A_rd,1)-1, []);
+    Embedding = Dmap;
+end
 
+%checkname = ['Kmeans_result_' num2str(mapflag) '*'];
 
-checkname = ['Kmeans_result_' num2str(mapflag) '*'];
-
-if isempty(dir(checkname))
-    switch mapflag
-    case 1
-        Embedding = curObj.Y;
-    case 2
-        A_rd = curObj.A_rd;
-        %Redo diffusion map analysis using information from all dims
-        Dmap = dimReduction.diffmap(A_rd, 2, size(A_rd,1)-1, []);
-        Embedding = Dmap;
-    end
-    
-    if isnan(str2double(handles.Max_K.String))
-        msgbox('Please input a valid interger!')
-        return
-    else
-        Max_K = str2double(handles.Max_K.String);
-    end
-    
-    %Kmeans 20 replicates
-    Kmeans_20 = @(X,K)(kmeans(X, K, 'emptyaction','drop',...
-        'replicate',20));
-    All_K = [];
-    
-    %Evaluate using DaviesBouldin 20 times to get the best K
-    for i = 1:20
-        cur_eva = evalclusters(Embedding,Kmeans_20,'DaviesBouldin','KList',[1:Max_K]);
-        All_K(i) = cur_eva.OptimalK;
-        disp([num2str(i) 'th evaluation...'])
-    end
-    OptimalK = mode(All_K);
-    disp(['Best K identified by Davies-Bouldin is: ' num2str(OptimalK)]);
-    handles.Show_status.String = ['Best K is: ' num2str(OptimalK)];
-
-    %Kmeans 100 replicates
-    Kmeans_100 = @(X,K)(kmeans(X, K, 'emptyaction','drop',...
-        'replicate',100));
-    %Revaluate using optimal K and 100 replicates
-    OptimalK_eva = evalclusters(Embedding,Kmeans_100,'DaviesBouldin','KList',[1:Max_K]);
-    [idx,C] = Kmeans_100(Embedding,OptimalK);
-    c = clock;
-    timetag = ['_' num2str(c(1)) num2str(c(2)) num2str(c(3)) num2str(c(4)) num2str(c(5))];
-    
+%Get Maximum K to search
+if isnan(str2double(handles.Max_K.String))
+    msgbox('Please input a valid interger!')
+    return
 else
-    tmp = dir(checkname);
-    load(fullfile(tmp.folder,tmp.name))
+    Max_K = str2double(handles.Max_K.String);
 end
 
-K_colormap = jet(OptimalK);
-try %Try to highlight the corresponding pixels in the reference brain map
-        xy_sub = curObj.xy_sub;
-        
-        %Construct representative trace for each cluster
-        A_rd = curObj.A_rd;
-        Rep_traces = nan(OptimalK, size(A_rd,2));
-        for k = 1:OptimalK
-            cur_color = K_colormap(k,:);
-            cur_cluster = [idx == k];
-            set(handles.figure1,'CurrentAxes',handles.axes1)
-            hold(handles.axes1, 'on');
-            scatter(xy_sub(cur_cluster,2),xy_sub(cur_cluster,1),...
-                20, cur_color, 'filled')            
-            %Use the average of all the pixels in one cluster as
-            %representative trace
-            Rep_traces(k,:) = nanmean(A_rd(cur_cluster,:),1);
-        end
-        %colormap(handles.axes1,'jet')
-        hold(handles.axes1, 'off');
-        saveas(handles.figure1,['Clustering_result' timetag '.png'])
-        %hold(handles.axes1, 'off');
-catch
-    warning('Something wrong projecting Kmeans results back!')
+%Kmeans: 20 replicates
+Kmeans_20 = @(X,K)(kmeans(X, K, 'emptyaction','drop',...
+    'replicate',20));
+All_K = [];
+
+%Evaluate using DaviesBouldin 20 times to get the best K
+for i = 1:20
+    cur_eva = evalclusters(Embedding,Kmeans_20,'DaviesBouldin','KList',[1:Max_K]);
+    All_K(i) = cur_eva.OptimalK;
+    disp([num2str(i) 'th evaluation...'])
+end
+OptimalK = mode(All_K);
+disp(['Best K identified by Davies-Bouldin is: ' num2str(OptimalK)]);
+handles.Show_status.String = ['Best K is: ' num2str(OptimalK)];
+
+%Kmeans: 100 replicates
+Kmeans_100 = @(X,K)(kmeans(X, K, 'emptyaction','drop',...
+    'replicate',100));
+
+%Revaluate using optimal K and 100 replicates
+OptimalK_eva = evalclusters(Embedding,Kmeans_100,'DaviesBouldin','KList',[1:Max_K]);
+[idx,C] = Kmeans_100(Embedding,OptimalK);
+c = clock;
+timetag = ['_' num2str(c(1)) num2str(c(2)) num2str(c(3)) num2str(c(4)) num2str(c(5))];
+
+%Store useful variables
+handles.Run_Kmeans.UserData.OptimalK = OptimalK;
+handles.Run_Kmeans.UserData.idx = idx;
+handles.Run_Kmeans.UserData.timetag = timetag;
+handles.Run_Kmeans.UserData.mapflag = mapflag;
+
+%Get representative traces of clusters by doing averaging within clusters
+A_rd = curObj.A_rd;
+Rep_traces = nan(OptimalK, size(A_rd,2));
+for k = 1:OptimalK
+    cur_cluster = [idx == k];
+    Rep_traces(k,:) = nanmean(A_rd(cur_cluster,:),1);
 end
 
-if isempty(dir(checkname))
-    %Save useful variables
-    uisave({'idx', 'C', 'OptimalK', 'OptimalK_eva','Rep_traces', 'Embedding'...
-        , 'mapflag', 'timetag'}, ['Kmeans_result_' num2str(mapflag) timetag '.mat'])
-end
+%Save useful variables
+uisave({'idx', 'C', 'OptimalK', 'OptimalK_eva','Rep_traces', 'Embedding'...
+    , 'mapflag', 'timetag'}, ['Kmeans_result_' num2str(mapflag) timetag '.mat'])
 
 
 
@@ -483,4 +463,51 @@ function Max_K_CreateFcn(hObject, eventdata, handles)
 %       See ISPC and COMPUTER.
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
+end
+
+
+% --- Executes on button press in Project_result.
+function Project_result_Callback(hObject, eventdata, handles)
+% hObject    handle to Project_result (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+%Get relevent variables
+curObj = handles.output.UserData;
+try
+    OptimalK = handles.Run_Kmeans.UserData.OptimalK;
+    idx = handles.Run_Kmeans.UserData.idx;
+    timetag = handles.Run_Kmeans.UserData.timetag;
+    mapflag = handles.Run_Kmeans.UserData.mapflag;
+catch
+    warning('Can not detect information for projection within the GUI!')
+    uiopen('Please load the Kmeans result!');
+end
+
+try %Try to highlight the corresponding pixels in the reference brain map
+        K_colormap = jet(OptimalK);
+        xy_sub = curObj.xy_sub;
+        
+        %Construct representative trace for each cluster
+        A_rd = curObj.A_rd;
+        Rep_traces = nan(OptimalK, size(A_rd,2));
+        for k = 1:OptimalK
+            cur_color = K_colormap(k,:);
+            cur_cluster = [idx == k];
+            set(handles.figure1,'CurrentAxes',handles.axes1)
+            hold(handles.axes1, 'on');
+            scatter(xy_sub(cur_cluster,2),xy_sub(cur_cluster,1),...
+                20, cur_color, 'filled')            
+            %Use the average of all the pixels in one cluster as
+            %representative trace
+            Rep_traces(k,:) = nanmean(A_rd(cur_cluster,:),1);
+        end
+        %colormap(handles.axes1,'jet')
+        hold(handles.axes1, 'off');
+        saveas(handles.figure1,['Clustering_result_' num2str(mapflag) ...
+            '_OptimalK_' num2str(OptimalK) timetag '.png'])
+        %hold(handles.axes1, 'off');
+catch
+    msgbox('Something wrong! Please make sure you load the right file or rerun Kmeans!'...
+        , 'Error!')
 end
