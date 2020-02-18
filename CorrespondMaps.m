@@ -25,7 +25,7 @@ function varargout = CorrespondMaps(varargin)
 
 % Edit the above text to modify the response to help CorrespondMaps
 
-% Last Modified by GUIDE v2.5 09-Feb-2020 13:07:32
+% Last Modified by GUIDE v2.5 18-Feb-2020 14:29:11
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -377,16 +377,26 @@ function Run_Kmeans_Callback(hObject, eventdata, handles)
 handles.Show_status.String = 'Running Kmeans analysis!';
 curObj = handles.output.UserData;
 
-%Choose which type of data to use;
-mapflag = get(handles.Choose_type, 'Value');
+%See whether run on raw dFoF trace instead on reduced data
+rawflag = get(handles.Run_raw, 'Value');
+if rawflag
+    mapflag = 0;
+    disp('Run on raw input (dFoF traces)!')
+else
+    %Choose which type of data to use;
+    mapflag = get(handles.Choose_type, 'Value');
+end
+
 switch mapflag
-case 1
-    Embedding = curObj.Y;
-case 2
-    A_rd = curObj.A_rd;
-    %Redo diffusion map analysis using information from all dims
-    Dmap = dimReduction.diffmap(A_rd, 2, size(A_rd,1)-1, []);
-    Embedding = Dmap;
+    case 0
+        Embedding = curObj.A_rd;    
+    case 1
+        Embedding = curObj.Y;   
+    case 2
+        A_rd = curObj.A_rd;
+        %Redo diffusion map analysis using information from all dims
+        Dmap = dimReduction.diffmap(A_rd, 2, size(A_rd,1)-1, []);
+        Embedding = Dmap;
 end
 
 %checkname = ['Kmeans_result_' num2str(mapflag) '*'];
@@ -400,13 +410,18 @@ else
 end
 
 %Kmeans: 20 replicates
-Kmeans_20 = @(X,K)(kmeans(X, K, 'emptyaction','drop',...
-    'replicate',20));
+if rawflag
+    Kmeans_10 = @(X,K)(kmeans(X, K, 'emptyaction','drop',...
+    'replicate', 10, 'Distance', 'correlation'));
+else
+    Kmeans_10 = @(X,K)(kmeans(X, K, 'emptyaction','drop',...
+        'replicate',10));
+end
 All_K = [];
 
-%Evaluate using DaviesBouldin 20 times to get the best K
-for i = 1:20
-    cur_eva = evalclusters(Embedding,Kmeans_20,'DaviesBouldin','KList',[1:Max_K]);
+%Evaluate using DaviesBouldin 10 times to get the best K
+for i = 1:10
+    cur_eva = evalclusters(Embedding,Kmeans_10,'DaviesBouldin','KList',[1:Max_K]);
     All_K(i) = cur_eva.OptimalK;
     disp([num2str(i) 'th evaluation...'])
 end
@@ -415,8 +430,13 @@ disp(['Best K identified by Davies-Bouldin is: ' num2str(OptimalK)]);
 handles.Show_status.String = ['Best K is: ' num2str(OptimalK)];
 
 %Kmeans: 100 replicates
-Kmeans_100 = @(X,K)(kmeans(X, K, 'emptyaction','drop',...
-    'replicate',100));
+if rawflag
+    Kmeans_100 = @(X,K)(kmeans(X, K, 'emptyaction','drop',...
+    'replicate',100, 'Distance', 'correlation'));
+else
+    Kmeans_100 = @(X,K)(kmeans(X, K, 'emptyaction','drop',...
+        'replicate',100));
+end
 
 %Revaluate using optimal K and 100 replicates
 OptimalK_eva = evalclusters(Embedding,Kmeans_100,'DaviesBouldin','KList',[1:Max_K]);
@@ -511,3 +531,12 @@ catch
     msgbox('Something wrong! Please make sure you load the right file or rerun Kmeans!'...
         , 'Error!')
 end
+
+
+% --- Executes on button press in Run_raw.
+function Run_raw_Callback(hObject, eventdata, handles)
+% hObject    handle to Run_raw (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of Run_raw

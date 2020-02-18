@@ -65,7 +65,7 @@ guidata(hObject, handles);
 if ~isempty(findobj('Tag', 'LineMapScan'))
     MC_h = findobj('Tag', 'LineMapScan');
     MC_data = guidata(MC_h);
-    LineMapObj = get(MC_data.Load_line, 'UserData');
+    LineMapObj = get(MC_data.Load_rectangle, 'UserData');
     
     Avg_line = LineMapObj.Avg_line;
     Avg_line = reshape(Avg_line', [1, size(Avg_line,2), size(Avg_line,1)]);
