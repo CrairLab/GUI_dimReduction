@@ -660,6 +660,7 @@ set(handles.output, 'UserData', curObj);
 set(handles.Dmap_status, 'String', 'Finished!')
 
 %Redisplay parameters;
+curObj.dParam = dParam;
 displayParam(curObj, handles);
 
 %Renew the current plots
@@ -745,9 +746,15 @@ curDmap = curObj.Dmap;
 
 cmap = 1:size(curY,1);
 scatter3(handles.tSNE_axes, curY(:,1),curY(:,2),curY(:,3),[],cmap,'filled');
+colormap(handles.tSNE_axes, 'copper');
 
 cmap = 1:size(curDmap,1);
-scatter3(handles.Dmap_axes, curDmap(:,1),curDmap(:,2),curDmap(:,3),[],cmap,'filled');
+if size(curDmap,2) == 3
+    scatter3(handles.Dmap_axes, curDmap(:,1),curDmap(:,2),curDmap(:,3),[],cmap,'filled');
+else
+    scatter(handles.Dmap_axes, curDmap(:,1),curDmap(:,2),[],cmap,'filled');
+end
+colormap(handles.Dmap_axes, 'copper');
 
 
 function Load_status_Callback(hObject, eventdata, handles)
