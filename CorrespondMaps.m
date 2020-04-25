@@ -169,6 +169,7 @@ cmap = 1:size(Embedding,1);
 fig1 = figure;
 map_handle = scatter3(Embedding(:,1),Embedding(:,2),Embedding(:,3),[],cmap,'filled');
 colorbar;
+colormap copper;
 %map_handle = plot3(Embedding(:,1),Embedding(:,2),Embedding(:,3));
 
 % Save the handles info as a struct data affiliated to the figure.
@@ -267,7 +268,8 @@ function callbackGetSelectedData(src, ~)
         %A_mean = curObj.A_ref;
         %imshow(mat2gray(A_mean), 'Parent', handles.axes1);
         hold(handles.axes1, 'on');
-        plot(handles.axes1,xy_sub(brushed_idx,2),xy_sub(brushed_idx,1),'r.')
+        %plot(handles.axes1,xy_sub(brushed_idx,2),xy_sub(brushed_idx,1),'r.')
+        scatter(handles.axes1,xy_sub(brushed_idx,2),xy_sub(brushed_idx,1),50,'filled')
         %hold(handles.axes1, 'off');
     catch
         warning('Can not load xy subscripts!')
@@ -439,7 +441,7 @@ else
 end
 
 %Revaluate using optimal K and 100 replicates
-OptimalK_eva = evalclusters(Embedding,Kmeans_100,'DaviesBouldin','KList',[1:Max_K]);
+%OptimalK_eva = evalclusters(Embedding,Kmeans_100,'DaviesBouldin','KList',[1:Max_K]);
 [idx,C] = Kmeans_100(Embedding,OptimalK);
 c = clock;
 timetag = ['_' num2str(c(1)) num2str(c(2)) num2str(c(3)) num2str(c(4)) num2str(c(5))];
@@ -505,7 +507,7 @@ catch
 end
 
 try %Try to highlight the corresponding pixels in the reference brain map
-        K_colormap = jet(OptimalK);
+        K_colormap = hsv(OptimalK);
         xy_sub = curObj.xy_sub;
         
         %Construct representative trace for each cluster
