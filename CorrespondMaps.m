@@ -441,7 +441,7 @@ else
 end
 
 %Revaluate using optimal K and 100 replicates
-%OptimalK_eva = evalclusters(Embedding,Kmeans_100,'DaviesBouldin','KList',[1:Max_K]);
+OptimalK_eva = evalclusters(Embedding,Kmeans_100,'DaviesBouldin','KList',[1:Max_K]);
 [idx,C] = Kmeans_100(Embedding,OptimalK);
 c = clock;
 timetag = ['_' num2str(c(1)) num2str(c(2)) num2str(c(3)) num2str(c(4)) num2str(c(5))];
