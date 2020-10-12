@@ -130,7 +130,7 @@ classdef dimReduction
         
             if nargin<2
                 t = 2;
-                m = 3;
+                m = 30;
                 sigma = [];
                 adaptive = 1;
             end
@@ -194,8 +194,8 @@ classdef dimReduction
             plot(lv); 
             
             %save parameters and eigenvectors
-            dParam.t = 2;
-            dParam.m = 3;
+            dParam.t = t;
+            dParam.m = m;
             dParam.sigma = sigma;
             dParam.adaptive = adaptive;
             dParam.psi = psi;
