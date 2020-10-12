@@ -25,7 +25,7 @@ function varargout = GUI_dimReduction(varargin)
 
 % Edit the above text to modify the response to help GUI_dimReduction
 
-% Last Modified by GUIDE v2.5 06-Feb-2020 11:31:55
+% Last Modified by GUIDE v2.5 11-Oct-2020 22:53:42
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -250,6 +250,9 @@ set(handles.Constrain_loc,'Value',0);
 iniParameters.locfactor = 0;
 set(handles.Spatial_factor,'String',num2str(0));
 set(handles.Constrain_coeff,'Value',0);
+%Use adaptive kernel for diffusion map analysis
+set(handles.Dmap_adaptive, 'Value', 1);
+iniParameters.adaptive = 1;
 %Downsample by 2 both temporally and spatially
 iniParameters.fd = [2, 2];
 set(handles.Spatial_factor,'Value',2);
@@ -321,7 +324,7 @@ curMovie = get(handles.Load_movie, 'UserData');
 %Run dimReduction
 try
     curObj = dimReduction(curMovie, param.tflag, param.locflag,...
-        param.locfactor, param.fd);
+        param.locfactor, param.fd, param.adaptive);
     set(handles.Run_status, 'String', 'Finished!')
 catch
     set(handles.Run_status, 'String', 'Error!')
@@ -395,6 +398,8 @@ iniParameters.locflag = 0;
 iniParameters.locfactor = 0;
 %Downsample by 2 both temporally and spatially
 iniParameters.fd = [2, 2];
+%Use adaptive kernel for diffusion map analysis
+iniParameters.adaptive = 1;
 %Save default parameters;
 hObject.UserData = iniParameters;
 
@@ -650,14 +655,19 @@ dParam = get(handles.Dmap_control, 'UserData');
 dParam.t = str2double(get(handles.edit9, 'String'));
 dParam.m = str2double(get(handles.Dmap_dims, 'String'));
 dParam.sigma = str2double(get(handles.Dmap_sigma, 'String'));
+dParam.adaptive = get(handles.Dmap_adaptive, 'Value');
 set(hObject.Parent, 'UserData', dParam);
 
 %Redo diffusion map using new parameters
 curObj = get(handles.output, 'UserData');
-[curObj.Dmap, curObj.dParam, ~] = ...
-    dimReduction.diffmap(curObj.A_rd, dParam.t, dParam.m, dParam.sigma);
+[curObj.Dmap, curObj.dParam] = ...
+    dimReduction.diffmap(curObj.A_rd, dParam.t, dParam.m, dParam.sigma,...
+    dParam.adaptive);
 set(handles.output, 'UserData', curObj);
 set(handles.Dmap_status, 'String', 'Finished!')
+if dParam.adaptive
+    set(handles.Dmap_status, 'String', 'Adaptive!')
+end
 
 %Redisplay parameters;
 curObj.dParam = dParam;
@@ -696,7 +706,7 @@ function Dmap_control_CreateFcn(hObject, eventdata, handles)
 % handles    empty - handles not created until after all CreateFcns called
 % Load default parameters for diffusion maps
 dParam.t = 2;
-dParam.m = 3;
+dParam.m = 30;
 dParam.sigma = [];
 hObject.UserData = dParam;
 
@@ -730,7 +740,12 @@ set(handles.popupmenu2, 'Value', curVal);
 dParam = curObj.dParam;
 set(handles.edit9, 'String', num2str(dParam.t));
 set(handles.Dmap_dims, 'String', num2str(dParam.m));
-set(handles.Dmap_sigma, 'String', num2str(dParam.sigma));
+if isfield(dParam, 'p')
+    text = num2str(dParam.p);
+else
+    text = num2str(dParam.sigma);
+end
+set(handles.Dmap_sigma, 'String', text);
 
 
 
@@ -806,3 +821,12 @@ end
 
 %save(['dimReduction' methodtag paramtag timetag '.mat'],'curObj', '-v7.3')
 uisave('curObj', ['dimReduction' methodtag paramtag timetag '.mat'])
+
+
+% --- Executes on button press in Dmap_adaptive.
+function Dmap_adaptive_Callback(hObject, eventdata, handles)
+% hObject    handle to Dmap_adaptive (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of Dmap_adaptive

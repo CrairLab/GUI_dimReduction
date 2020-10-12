@@ -397,7 +397,11 @@ switch mapflag
     case 2
         A_rd = curObj.A_rd;
         %Redo diffusion map analysis using information from all dims
-        Dmap = dimReduction.diffmap(A_rd, 2, size(A_rd,1)-1, []);
+        %Dmap = dimReduction.diffmap(A_rd, 2, size(A_rd,1)-1, [], curObj.adaptive);
+        psi = curObj.dParam.psi;
+        vals = curObj.dParam.vals;
+        t = curObj.dParam.t;
+        Dmap = psi(:,2:end).*(vals(2:end)'.^t);
         Embedding = Dmap;
 end
 

@@ -190,7 +190,7 @@ classdef dimReduction
             
             %plot eigenvalues of graph Laplacian
             f = figure;
-            lv = 1-vals;
+            lv = 1-vals; ncluster = find(lv_diff<1/m,1) - 1;
             plot(lv); 
             
             %save parameters and eigenvectors
