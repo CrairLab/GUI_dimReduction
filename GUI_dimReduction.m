@@ -25,7 +25,7 @@ function varargout = GUI_dimReduction(varargin)
 
 % Edit the above text to modify the response to help GUI_dimReduction
 
-% Last Modified by GUIDE v2.5 11-Oct-2020 22:53:42
+% Last Modified by GUIDE v2.5 17-Dec-2020 21:18:08
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -323,8 +323,9 @@ curMovie = get(handles.Load_movie, 'UserData');
 
 %Run dimReduction
 try
-    curObj = dimReduction(curMovie, param.tflag, param.locflag,...
-        param.locfactor, param.fd, param.adaptive);
+    curObj = dimReduction(curMovie, 'tflag', param.tflag, ...
+        'locflag', param.locflag, 'locfactor', param.locfactor, ...
+        'fd', param.fd, 'adaptive', param.adaptive);
     set(handles.Run_status, 'String', 'Finished!')
 catch
     set(handles.Run_status, 'String', 'Error!')
@@ -399,7 +400,7 @@ iniParameters.locfactor = 0;
 %Downsample by 2 both temporally and spatially
 iniParameters.fd = [2, 2];
 %Use adaptive kernel for diffusion map analysis
-iniParameters.adaptive = 1;
+%iniParameters.adaptive = 1;
 %Save default parameters;
 hObject.UserData = iniParameters;
 
@@ -571,18 +572,18 @@ hObject.UserData = tParam;
 
 
 
-function edit9_Callback(hObject, eventdata, handles)
-% hObject    handle to edit9 (see GCBO)
+function Dmap_steps_Callback(hObject, eventdata, handles)
+% hObject    handle to Dmap_steps (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-% Hints: get(hObject,'String') returns contents of edit9 as text
-%        str2double(get(hObject,'String')) returns contents of edit9 as a double
+% Hints: get(hObject,'String') returns contents of Dmap_steps as text
+%        str2double(get(hObject,'String')) returns contents of Dmap_steps as a double
 
 
 % --- Executes during object creation, after setting all properties.
-function edit9_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to edit9 (see GCBO)
+function Dmap_steps_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to Dmap_steps (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    empty - handles not created until after all CreateFcns called
 
@@ -652,7 +653,7 @@ set(handles.Dmap_status, 'String', 'Running...')
 
 %Get renewed parameters
 dParam = get(handles.Dmap_control, 'UserData');
-dParam.t = str2double(get(handles.edit9, 'String'));
+dParam.t = str2double(get(handles.Dmap_steps, 'String'));
 dParam.m = str2double(get(handles.Dmap_dims, 'String'));
 dParam.sigma = str2double(get(handles.Dmap_sigma, 'String'));
 dParam.adaptive = get(handles.Dmap_adaptive, 'Value');
@@ -674,7 +675,7 @@ curObj.dParam = dParam;
 displayParam(curObj, handles);
 
 %Renew the current plots
-plotAxes(curObj, handles);
+%plotAxes(curObj, handles);
 
 
 function Dmap_status_Callback(hObject, eventdata, handles)
@@ -738,14 +739,25 @@ set(handles.popupmenu2, 'Value', curVal);
 
 %Display diffusion map parameters
 dParam = curObj.dParam;
-set(handles.edit9, 'String', num2str(dParam.t));
+set(handles.Dmap_steps, 'String', num2str(dParam.t));
 set(handles.Dmap_dims, 'String', num2str(dParam.m));
 if isfield(dParam, 'p')
     text = num2str(dParam.p);
 else
     text = num2str(dParam.sigma);
 end
+
 set(handles.Dmap_sigma, 'String', text);
+
+%Display PHATE parameters
+pParam = curObj.pParam;
+set(handles.pt_ndim, 'String', num2str(pParam.ndim));
+set(handles.pt_k, 'String', num2str(pParam.k));
+set(handles.pt_a, 'String', num2str(pParam.a));
+set(handles.pt_t, 'String', num2str(pParam.t));
+set(handles.pt_npca, 'String', num2str(pParam.npca));
+
+
 
 
 
@@ -757,19 +769,19 @@ function plotAxes(curObj, handles)
 % handles    handles of UI components
 
 curY = curObj.Y;
-curDmap = curObj.Dmap;
+curPT = curObj.PT;
 
 cmap = 1:size(curY,1);
 scatter3(handles.tSNE_axes, curY(:,1),curY(:,2),curY(:,3),[],cmap,'filled');
 colormap(handles.tSNE_axes, 'copper');
 
-cmap = 1:size(curDmap,1);
-if size(curDmap,2) >= 3
-    scatter3(handles.Dmap_axes, curDmap(:,1),curDmap(:,2),curDmap(:,3),[],cmap,'filled');
+cmap = 1:size(curPT,1);
+if size(curPT,2) >= 3
+    scatter3(handles.PHATE_axes, curPT(:,1),curPT(:,2),curPT(:,3),[],cmap,'filled');
 else
-    scatter(handles.Dmap_axes, curDmap(:,1),curDmap(:,2),[],cmap,'filled');
+    scatter(handles.PHATE_axes, curPT(:,1),curPT(:,2),[],cmap,'filled');
 end
-colormap(handles.Dmap_axes, 'copper');
+colormap(handles.PHATE_axes, 'copper');
 
 
 function Load_status_Callback(hObject, eventdata, handles)
@@ -828,5 +840,178 @@ function Dmap_adaptive_Callback(hObject, eventdata, handles)
 % hObject    handle to Dmap_adaptive (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-
+iniParameters = get(handles.Use_default, 'UserData');
+iniParameters.adaptive = get(handles.Dmap_adaptive, 'Value');
+set(handles.Use_default, 'UserData', iniParameters);
 % Hint: get(hObject,'Value') returns toggle state of Dmap_adaptive
+
+
+
+function pt_ndim_Callback(hObject, eventdata, handles)
+% hObject    handle to pt_ndim (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of pt_ndim as text
+%        str2double(get(hObject,'String')) returns contents of pt_ndim as a double
+
+
+% --- Executes during object creation, after setting all properties.
+function pt_ndim_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to pt_ndim (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+
+function pt_k_Callback(hObject, eventdata, handles)
+% hObject    handle to pt_k (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of pt_k as text
+%        str2double(get(hObject,'String')) returns contents of pt_k as a double
+
+
+% --- Executes during object creation, after setting all properties.
+function pt_k_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to pt_k (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+
+function pt_t_Callback(hObject, eventdata, handles)
+% hObject    handle to pt_t (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of pt_t as text
+%        str2double(get(hObject,'String')) returns contents of pt_t as a double
+
+
+% --- Executes during object creation, after setting all properties.
+function pt_t_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to pt_t (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+
+function pt_npca_Callback(hObject, eventdata, handles)
+% hObject    handle to pt_npca (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of pt_npca as text
+%        str2double(get(hObject,'String')) returns contents of pt_npca as a double
+
+
+% --- Executes during object creation, after setting all properties.
+function pt_npca_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to pt_npca (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+% --- Executes on button press in pt_renew.
+function pt_renew_Callback(hObject, eventdata, handles)
+% hObject    handle to pt_renew (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+    %Show progress
+    set(handles.pt_status, 'Visible', 'On')
+    set(handles.pt_status, 'String', 'Running...')
+
+    %Load renewed parameters
+    pParam = get(handles.pt_control, 'UserData');
+    pParam.ndim = str2double(get(handles.pt_ndim, 'String'));
+    pParam.k = str2double(get(handles.pt_k, 'String'));
+    pParam.a = str2double(get(handles.pt_a, 'String'));
+    pParam.t = str2double(get(handles.pt_t, 'String'));
+    pParam.npca = str2double(get(handles.pt_npca, 'String'));
+    set(hObject.Parent, 'UserData', pParam);
+
+    %Redo PHATE using new parameters
+    curObj = get(handles.output, 'UserData');
+    curObj.pParam = pParam;
+    curObj.PT = dimReduction.doPHATE(curObj.A_rd, 'ndim', pParam.ndim, 'k',... 
+        pParam.k, 'a', pParam.a, 't', pParam.t, 'npca', pParam.npca);
+    set(handles.output, 'UserData', curObj);
+    set(handles.pt_status, 'String', 'Finished!')
+
+    %Redisplay parameters;
+    displayParam(curObj, handles);
+
+    %Renew the current plots
+    plotAxes(curObj, handles);
+
+
+function pt_status_Callback(hObject, eventdata, handles)
+% hObject    handle to pt_status (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of pt_status as text
+%        str2double(get(hObject,'String')) returns contents of pt_status as a double
+
+
+% --- Executes during object creation, after setting all properties.
+function pt_status_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to pt_status (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+
+function pt_a_Callback(hObject, eventdata, handles)
+% hObject    handle to pt_a (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of pt_a as text
+%        str2double(get(hObject,'String')) returns contents of pt_a as a double
+
+
+% --- Executes during object creation, after setting all properties.
+function pt_a_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to pt_a (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end

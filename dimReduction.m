@@ -21,13 +21,15 @@ classdef dimReduction
         xy_sub;    %xy indicies of non-nan and non-zero pixels
         Dmap;      %Diffusion map
         Y;         %tSNE result
+        PT;        %PHATE result
         tParam;    %Parameters used in tSNE
         dParam;    %Parameters used in diffusion map
+        pParam;    %Parameters used in PHATE
         adaptive;  %Whether use adaptive kernels for diffusion map analysis
     end
     
     methods
-        function obj = dimReduction(A, tflag, locflag, locfactor, fd, adaptive)
+        function obj = dimReduction(A, varargin)
         %   Class constructor, read in 3D matrix A from pre-processing
         %
         %   Inputs:
@@ -39,6 +41,41 @@ classdef dimReduction
         %
         %   Outputs:
         %   obj    dimReduction object
+            
+            fd = [2, 2];
+            locfactor = 1;
+            adaptive = 1;
+            tflag = 0;
+            locflag = 0;
+            
+            % get input parameters
+            for i=1:length(varargin)
+                % fd for further downsampling
+                if(strcmp(varargin{i},'fd'))
+                   fd = lower(varargin{i+1});
+                end
+                
+                % add location weighted factor
+                if(strcmp(varargin{i},'locfactor'))
+                   locfactor = lower(varargin{i+1});
+                end
+                
+                % whether to use an adpative kernel
+                if(strcmp(varargin{i},'adaptive'))
+                   adaptive = lower(varargin{i+1});
+                end
+                
+                % transpose flag
+                if(strcmp(varargin{i},'tflag'))
+                   tflag = lower(varargin{i+1});
+                end
+                
+                 % whether use locations as constraints
+                if(strcmp(varargin{i},'locflag'))
+                   locflag = lower(varargin{i+1});
+                end
+                
+            end
             
             if ~exist('fd','var')
                 fd = [2,2]; %further downsample by factors of 2s both spatially and temporally
@@ -103,8 +140,9 @@ classdef dimReduction
                 num2str(size(obj.A_rd))]);
             clear A_re;
             
-            [obj.Dmap, obj.dParam] = dimReduction.diffmap(obj.A_rd, 2, 30, 10, adaptive);
+            [obj.Dmap, obj.dParam] = dimReduction.diffmap(obj.A_rd, 2, 30, 5, adaptive);
             [obj.Y, obj.tParam, ~] = dimReduction.doTSNE(obj.A_rd);
+            [obj.PT, obj.pParam, ~] = dimReduction.doPHATE(obj.A_rd, 'ndim', 3);
             
         end       
     end
@@ -155,7 +193,7 @@ classdef dimReduction
             else
                 %Use adaptive kernels
                 if isempty(sigma)||isnan(sigma)
-                    p = 10;
+                    p = 5;
                 else
                     p = ceil(sigma); %kernel size = distances to the pth neighbour
                 end
@@ -248,6 +286,203 @@ classdef dimReduction
             'Options', options);
                       
         end
+        
+        
+        function [Y, par, others] = doPHATE(X, varargin)
+        % phate  Run PHATE for visualizing noisy non-linear data in lower dimensions
+        % PLEASE SEE the original code at https://github.com/KrishnaswamyLab/PHATE/tree/master/Matlab
+        %   Y = phate(data) runs PHATE on data (rows: samples, columns: features)
+        %   with default parameter settings and returns a 2 dimensional embedding.
+        %
+        %   If data is sparse PCA without mean centering will be done to maintain
+        %   low memory footprint. If data is dense then normal PCA (with mean
+        %   centering) is done.
+        %
+        %   Y = phate(data, 'PARAM1',val1, 'PARAM2',val2, ...) allows you to
+        %   specify optional parameter name/value pairs that control further details
+        %   of PHATE.  Parameters are:
+        %
+        %   'ndim' - number of (output) embedding dimensions. Common values are 2
+        %   or 3. Defaults to 2.
+        %
+        %   'k' - number of nearest neighbors for bandwidth of adaptive alpha
+        %   decaying kernel or, when a=[], number of nearest neighbors of the knn
+        %   graph. For the unweighted kernel we recommend k to be a bit larger,
+        %   e.g. 10 or 15. Defaults to 5.
+        %
+        %   'a' - alpha of alpha decaying kernel. when a=[] knn (unweighted) kernel
+        %   is used. Defaults to 40.
+        %
+        %   't' - number of diffusion steps. Defaults to [] wich autmatically picks
+        %   the optimal t.
+        %
+        %   't_max' - maximum t for finding optimal t. if t = [] optimal t will be
+        %   computed by computing Von Neumann Entropy for each t <= t_max and then
+        %   picking the kneepoint. Defaults to 100.
+        %
+        %   'npca' - number of pca components for computing distances. Defaults to
+        %   100.
+        %
+        %   'mds_method' - method of multidimensional scaling. Choices are:
+        %
+        %       'mmds' - metric MDS (default)
+        %       'cmds' - classical MDS
+        %       'nmmds' - non-metric MDS
+        %
+        %   'distfun' - distance function. Default is 'euclidean'.
+        %
+        %   'distfun_mds' - distance function for MDS. Default is 'euclidean'.
+        %
+        %   'pot_method' - method of computing the PHATE potential dstance. Choices
+        %   are:
+        %
+        %       'log' - -log(P + eps). (default)
+        %
+        %       'sqrt' - sqrt(P). (not default but often produces superior
+        %       embeddings)
+        %
+        %       'gamma' - 2/(1-\gamma)*P^((1-\gamma)/2)
+        %
+        %   'gamma' - gamma value for gamma potential method. Value between -1 and
+        %   1. -1 is diffusion distance. 1 is log potential. 0 is sqrt. Smaller
+        %   gamma is a more locally sensitive embedding whereas larger gamma is a
+        %   more globally sensitive embedding. Defaults to 0.5.
+        %
+        %   'pot_eps' - epsilon value added to diffusion operator prior to
+        %   computing potential. Only used for 'pot_method' is 'log', i.e.:
+        %   -log(P + pot_eps). Defaults to 1e-7.
+        %
+        %   'n_landmarks' - number of landmarks for fast and scalable PHATE. [] or
+        %   n_landmarks = npoints does no landmarking, which is slower. More
+        %   landmarks is more accurate but comes at the cost of speed and memory.
+        %   Defaults to 2000.
+        %
+        %   'nsvd' - number of singular vectors for spectral clustering (for
+        %   computing landmarks). Defaults to 100.
+        %
+        %   'kernel' - user supplied kernel. If not given ([]) kernel is
+        %   computed from the supplied data. Supplied kernel should be a square
+        %   (samples by samples) symmetric affinity matrix. If kernel is
+        %   supplied input data can be empty ([]). Defaults to [].  
+            
+            %Scrape colums or rows consist of NaN
+            if any(~isnan(sum(X,1)))
+                X(:,isnan(X(1,:))) = [];
+            else
+                X(isnan(X(:,1)),:) = [];
+            end
+            
+            %Default parameter
+            npca = 100;
+            k = 5;
+            nsvd = 100;
+            n_landmarks = 2000;
+            ndim = 2;
+            t = [];
+            mds_method = 'mmds';
+            distfun = 'euclidean';
+            distfun_mds = 'euclidean';
+            pot_method = 'log';
+            K = [];
+            a = 40;
+            Pnm = [];
+            t_max = 100;
+            pot_eps = 1e-7;
+            gamma = 0.5;
+
+            % get input parameters
+            for i=1:length(varargin)
+                % k for knn adaptive sigma
+                if(strcmp(varargin{i},'k'))
+                   k = lower(varargin{i+1});
+                end
+                % a (alpha) for alpha decaying kernel
+                if(strcmp(varargin{i},'a'))
+                   a = lower(varargin{i+1});
+                end
+                % diffusion time
+                if(strcmp(varargin{i},'t'))
+                   t = lower(varargin{i+1});
+                   if isnan(t)
+                       t = [];
+                   end
+                end
+                % t_max for VNE
+                if(strcmp(varargin{i},'t_max'))
+                   t_max = lower(varargin{i+1});
+                end
+                % Number of pca components
+                if(strcmp(varargin{i},'npca'))
+                   npca = lower(varargin{i+1});
+                end
+                % Number of dimensions for the PHATE embedding
+                if(strcmp(varargin{i},'ndim'))
+                   ndim = lower(varargin{i+1});
+                end
+                % Method for MDS
+                if(strcmp(varargin{i},'mds_method'))
+                   mds_method =  varargin{i+1};
+                end
+                % Distance function for the inputs
+                if(strcmp(varargin{i},'distfun'))
+                   distfun = lower(varargin{i+1});
+                end
+                % distfun for MDS
+                if(strcmp(varargin{i},'distfun_mds'))
+                   distfun_mds =  lower(varargin{i+1});
+                end
+                % nsvd for spectral clustering
+                if(strcmp(varargin{i},'nsvd'))
+                   nsvd = lower(varargin{i+1});
+                end
+                % n_landmarks for spectral clustering
+                if(strcmp(varargin{i},'n_landmarks'))
+                   n_landmarks = lower(varargin{i+1});
+                end
+                % potential method: log, sqrt, gamma
+                if(strcmp(varargin{i},'pot_method'))
+                   pot_method = lower(varargin{i+1});
+                end
+                % kernel
+                if(strcmp(varargin{i},'kernel'))
+                   K = lower(varargin{i+1});
+                end
+                % kernel
+                if(strcmp(varargin{i},'gamma'))
+                   gamma = lower(varargin{i+1});
+                end
+                % pot_eps
+                if(strcmp(varargin{i},'pot_eps'))
+                   pot_eps = lower(varargin{i+1});
+                end
+            end
+            
+            [Y, others.P, others. K] = phate(X, 'ndim', ndim, 'k', k, 'a', ...
+                a, 't', t, 't_max', t_max, 'npca', npca,...
+                'mds_method', mds_method, 'distfun', 'distfun', distfun,...
+                'distfun_mds', distfun_mds, 'nsvd', nsvd, 'n_landmarks', ...
+                n_landmarks, 'pot_method', pot_method, 'K', K, 'gamma', gamma,...
+                'pot_eps', pot_eps);
+            
+            %Save all parameters
+            par.k = k;
+            par.ndim = ndim;
+            par.a = a;
+            par.t = t;
+            par.t_max = t_max;
+            par.npca = npca;
+            par.mds_method = mds_method;
+            par.distfun = distfun;
+            par.distfun_mds = distfun_mds;
+            par.nsvd = nsvd;
+            par.n_landmarks = n_landmarks;
+            par.pot_method = pot_method;
+            par.K = K;
+            par.gamma = gamma;
+            par.pot_eps = pot_eps;    
+            
+        end
+        
         
         
         function A_rcs = rcsFromSVD(U, V, S, iniDim)

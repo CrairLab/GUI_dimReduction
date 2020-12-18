@@ -25,7 +25,7 @@ function varargout = CorrespondMaps(varargin)
 
 % Edit the above text to modify the response to help CorrespondMaps
 
-% Last Modified by GUIDE v2.5 18-Feb-2020 14:29:11
+% Last Modified by GUIDE v2.5 18-Dec-2020 10:28:34
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -145,7 +145,7 @@ function runCorrespondMaps(curObj, handles, methodflag, mapflag)
 %   curObj    input dimReduction object
 %   handles   UI component handles
 %   methodflag     0 for pixelwise, 1 for framewise
-%   mapflag   1 for tSNE, 2 for diffusion map
+%   mapflag   1 for tSNE, 2 for diffusion map, 3 for PHATE
 
 if nargin<3
     mapflag = 1;
@@ -162,6 +162,8 @@ switch mapflag
     Embedding = curObj.Y;
     case 2
     Embedding = curObj.Dmap;
+    case 3
+    Embedding = curObj.PT;
 end
 
 % Plot the map in a different figure.
@@ -403,6 +405,8 @@ switch mapflag
         t = curObj.dParam.t;
         Dmap = psi(:,2:end).*(vals(2:end)'.^t);
         Embedding = Dmap;
+    case 3
+        Embedding = curObj.PT; %PHATE
 end
 
 %checkname = ['Kmeans_result_' num2str(mapflag) '*'];
@@ -419,34 +423,40 @@ end
 if rawflag
     Kmeans_10 = @(X,K)(kmeans(X, K, 'emptyaction','drop',...
     'replicate', 10, 'Distance', 'correlation'));
-else
-    Kmeans_10 = @(X,K)(kmeans(X, K, 'emptyaction','drop',...
-        'replicate',10));
-end
-All_K = [];
-
-%Evaluate using DaviesBouldin 10 times to get the best K
-for i = 1:10
-    cur_eva = evalclusters(Embedding,Kmeans_10,'DaviesBouldin','KList',[1:Max_K]);
-    All_K(i) = cur_eva.OptimalK;
-    disp([num2str(i) 'th evaluation...'])
-end
-OptimalK = mode(All_K);
-disp(['Best K identified by Davies-Bouldin is: ' num2str(OptimalK)]);
-handles.Show_status.String = ['Best K is: ' num2str(OptimalK)];
-
-%Kmeans: 100 replicates
-if rawflag
     Kmeans_100 = @(X,K)(kmeans(X, K, 'emptyaction','drop',...
     'replicate',100, 'Distance', 'correlation'));
 else
+    Kmeans_10 = @(X,K)(kmeans(X, K, 'emptyaction','drop',...
+    'replicate',10));
     Kmeans_100 = @(X,K)(kmeans(X, K, 'emptyaction','drop',...
-        'replicate',100));
+    'replicate',100));
 end
 
-%Revaluate using optimal K and 100 replicates
-OptimalK_eva = evalclusters(Embedding,Kmeans_100,'DaviesBouldin','KList',[1:Max_K]);
-[idx,C] = Kmeans_100(Embedding,OptimalK);
+All_K = [];
+
+xmeans_flag = get(handles.xmeans, 'Value');
+
+if xmeans_flag
+    %Use the xmeans/ BIC creterion
+    [idx,C,OptimalK,~] = XMeans(Embedding, Max_K, 20);
+    OptimalK_eva = [];
+else
+    %Evaluate using DaviesBouldin 10 times to get the best K
+    for i = 1:10
+        cur_eva = evalclusters(Embedding,Kmeans_10,'DaviesBouldin','KList',[1:Max_K]);
+        All_K(i) = cur_eva.OptimalK;
+        disp([num2str(i) 'th evaluation...'])
+    end
+    OptimalK = mode(All_K);
+    disp(['Best K identified by Davies-Bouldin is: ' num2str(OptimalK)]);
+    handles.Show_status.String = ['Best K is: ' num2str(OptimalK)];
+
+    %Revaluate using optimal K and 100 replicates
+    OptimalK_eva = evalclusters(Embedding,Kmeans_100,'DaviesBouldin','KList',[1:Max_K]);
+    [idx,C] = Kmeans_100(Embedding,OptimalK);
+end
+
+%Record current time
 c = clock;
 timetag = ['_' num2str(c(1)) num2str(c(2)) num2str(c(3)) num2str(c(4)) num2str(c(5))];
 
@@ -455,6 +465,7 @@ handles.Run_Kmeans.UserData.OptimalK = OptimalK;
 handles.Run_Kmeans.UserData.idx = idx;
 handles.Run_Kmeans.UserData.timetag = timetag;
 handles.Run_Kmeans.UserData.mapflag = mapflag;
+handles.Run_Kmeans.UserData.xmeans_flag = xmeans_flag;
 
 %Get representative traces of clusters by doing averaging within clusters
 A_rd = curObj.A_rd;
@@ -466,7 +477,8 @@ end
 
 %Save useful variables
 uisave({'idx', 'C', 'OptimalK', 'OptimalK_eva','Rep_traces', 'Embedding'...
-    , 'mapflag', 'timetag'}, ['Kmeans_result_' num2str(mapflag) timetag '.mat'])
+    , 'mapflag', 'timetag'}, ['Kmeans_result_BestK_' num2str(OptimalK) ...
+    '_mapflag_' num2str(mapflag) timetag '.mat'])
 
 
 
@@ -546,3 +558,12 @@ function Run_raw_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 
 % Hint: get(hObject,'Value') returns toggle state of Run_raw
+
+
+% --- Executes on button press in xmeans.
+function xmeans_Callback(hObject, eventdata, handles)
+% hObject    handle to xmeans (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of xmeans
