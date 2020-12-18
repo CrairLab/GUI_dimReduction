@@ -27,8 +27,8 @@ function [clst_labels, clst_centers, K_old, bic_after_split] = XMeans(X, kmax, m
          display(['Splitting...Current K = ', num2str(K_old)])
     end
     %Run vanilla kmeas with the number of clusters identified above
-    [clst_labels,clst_centers, ~] = ...
-            kmeans(X, K_old, 'emptyaction','drop','replicate', 100);
+    %[clst_labels,clst_centers, ~] = ...
+    %        kmeans(X, K_old, 'emptyaction','drop','replicate', 100);
     
 end
 
