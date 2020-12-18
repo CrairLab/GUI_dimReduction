@@ -435,23 +435,23 @@ end
 All_K = [];
 
 xmeans_flag = get(handles.xmeans, 'Value');
-allBIC = [];
+%allBIC = [];
 
 if xmeans_flag
     OptimalK_eva = [];
     %Use the xmeans/ BIC creterion
     for i = 1:10
         [~, ~, ~, curBIC] = XMeans(Embedding, Max_K, 20);
-        allBIC = [allBIC; curBIC];
+        %allBIC = [allBIC; curBIC];
         [~, curOptimal] = min(curBIC(2:end)); 
         OptimalK_eva = [OptimalK_eva curOptimal];
         display(['Repeat #' num2str(i)]) 
     end
-    figure;
-    plot(-allBIC'); title('BIC'); xlabel('K');
-    hold on
-    plot(mean(-allBIC, 1), 'LineWidth', 5);
-    hold off
+    %figure;
+    %plot(-allBIC'); title('BIC'); xlabel('K');
+    %hold on
+    %plot(mean(-allBIC, 1), 'LineWidth', 5);
+    %hold off
     OptimalK = ceil(median(OptimalK_eva));
     [idx,C] = Kmeans_100(Embedding,OptimalK);    
 else
