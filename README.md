@@ -3,6 +3,8 @@
 A graphic user interface for dimsionality reduction. Currently include t-SNE and diffusion map, will incorporate N-cut parcellation in the future.
 Required environment:  Later than Matlab 2017a
 
+! Note that any version after 12/18/2020 requires PHATE from https://github.com/KrishnaswamyLab/PHATE/tree/master/Matlab !
+
 I.	Installation:
 Download the GUI_dimReduction master package at https://github.com/CrairLab/GUI_dimReduction, which include:
 a.	GUI_dimReduction.m and GUI_dimReduction.fig: main interface/control window
@@ -12,3 +14,4 @@ Run the GUI_dimReduction.m in matlab
    
 II.	Workflow: 
 See workflow.pptx
+
