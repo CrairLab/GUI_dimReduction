@@ -443,7 +443,11 @@ if xmeans_flag
     for i = 1:10
         [~, ~, ~, curBIC] = XMeans(Embedding, Max_K, 20);
         %allBIC = [allBIC; curBIC];
-        [~, curOptimal] = min(curBIC(2:end)); 
+        if length(curBIC) == 1
+            curOptimal = 1;
+        else
+            [~, curOptimal] = min(curBIC(2:end)); 
+        end
         OptimalK_eva = [OptimalK_eva curOptimal];
         display(['Repeat #' num2str(i)]) 
     end
