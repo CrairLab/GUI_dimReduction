@@ -440,7 +440,7 @@ xmeans_flag = get(handles.xmeans, 'Value');
 if xmeans_flag
     OptimalK_eva = [];
     %Use the xmeans/ BIC creterion
-    for i = 1:10
+    for i = 1:100
         [~, ~, ~, curBIC] = XMeans(Embedding, Max_K, 20);
         %allBIC = [allBIC; curBIC];
         if length(curBIC) == 1
