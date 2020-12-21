@@ -13,5 +13,5 @@ c.	MovieData and dimReduction classes: contain functions that will be called by 
 Run the GUI_dimReduction.m in matlab
    
 II.	Workflow: 
-See workflow.pptx
+See README.docx
 
