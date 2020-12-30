@@ -25,7 +25,7 @@ function varargout = CorrespondMaps(varargin)
 
 % Edit the above text to modify the response to help CorrespondMaps
 
-% Last Modified by GUIDE v2.5 18-Dec-2020 10:28:34
+% Last Modified by GUIDE v2.5 30-Dec-2020 14:16:10
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -372,13 +372,13 @@ imshow(mat2gray(A_mean), 'Parent', handles.axes1);
 hold(handles.axes1, 'on');
 
 
-% --- Executes on button press in Run_Kmeans.
-function Run_Kmeans_Callback(hObject, eventdata, handles)
-% hObject    handle to Run_Kmeans (see GCBO)
+% --- Executes on button press in Eva_Kmeans.
+function Eva_Kmeans_Callback(hObject, eventdata, handles)
+% hObject    handle to Eva_Kmeans (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-handles.Show_status.String = 'Running Kmeans analysis!';
+handles.Show_status.String = 'Running Kmeans evaluatioin!';
 curObj = handles.output.UserData;
 
 %See whether run on raw dFoF trace instead on reduced data
@@ -391,23 +391,7 @@ else
     mapflag = get(handles.Choose_type, 'Value');
 end
 
-switch mapflag
-    case 0
-        Embedding = curObj.A_rd;    
-    case 1
-        Embedding = curObj.Y;   
-    case 2
-        A_rd = curObj.A_rd;
-        %Redo diffusion map analysis using information from all dims
-        %Dmap = dimReduction.diffmap(A_rd, 2, size(A_rd,1)-1, [], curObj.adaptive);
-        psi = curObj.dParam.psi;
-        vals = curObj.dParam.vals;
-        t = curObj.dParam.t;
-        Dmap = psi(:,2:end).*(vals(2:end)'.^t);
-        Embedding = Dmap;
-    case 3
-        Embedding = curObj.PT; %PHATE
-end
+Embedding = getEmbedding(curObj, mapflag);
 
 %checkname = ['Kmeans_result_' num2str(mapflag) '*'];
 
@@ -434,44 +418,50 @@ end
 
 All_K = [];
 
-xmeans_flag = get(handles.xmeans, 'Value');
+criterion_flag = get(handles.Criterion, 'Value');
 %allBIC = [];
 
-if xmeans_flag
-    OptimalK_eva = [];
-    %Use the xmeans/ BIC creterion
-    for i = 1:100
-        [~, ~, ~, curBIC] = XMeans(Embedding, Max_K, 20);
-        %allBIC = [allBIC; curBIC];
-        if length(curBIC) == 1
-            curOptimal = 1;
-        else
-            [~, curOptimal] = min(curBIC(2:end)); 
+switch criterion_flag
+    case 1
+        msgbox('Please select an evaluation criterion!')
+    case 2
+        %Use the xmeans criterion
+        OptimalK_eva = [];
+        for i = 1:10
+            [~, ~, curOptimal, curBIC] = XMeans(Embedding, Max_K, 1000);
+            %allBIC = [allBIC; curBIC];
+            if length(curBIC) == 1
+                curOptimal = 1;
+            else
+                disp('Use Xmeans criterion...')          
+            end
+            OptimalK_eva = [OptimalK_eva curOptimal];
+            display(['Repeat #' num2str(i)]) 
         end
-        OptimalK_eva = [OptimalK_eva curOptimal];
-        display(['Repeat #' num2str(i)]) 
-    end
-    %figure;
-    %plot(-allBIC'); title('BIC'); xlabel('K');
-    %hold on
-    %plot(mean(-allBIC, 1), 'LineWidth', 5);
-    %hold off
-    OptimalK = ceil(median(OptimalK_eva));
-    [idx,C] = Kmeans_100(Embedding,OptimalK);    
-else
-    %Evaluate using DaviesBouldin 10 times to get the best K
-    for i = 1:10
-        cur_eva = evalclusters(Embedding,Kmeans_10,'DaviesBouldin','KList',[1:Max_K]);
-        All_K(i) = cur_eva.OptimalK;
-        disp([num2str(i) 'th evaluation...'])
-    end
-    OptimalK = mode(All_K);
-    disp(['Best K identified by Davies-Bouldin is: ' num2str(OptimalK)]);
-    handles.Show_status.String = ['Best K is: ' num2str(OptimalK)];
+        OptimalK = ceil(median(OptimalK_eva));
+        disp(['Optimal K = ' num2str(OptimalK)]);
+        msgbox(['Optimal K = ' num2str(OptimalK)])
+        %[idx,C] = Kmeans_100(Embedding,OptimalK);
+    case 3
+        %Use the BIC criterion
+        [OptimalK_eva, bic_knee, bic_laplacian] = bestBIC(Embedding, Max_K);
+        msgbox(['BIC knee = ' num2str(bic_knee) ...
+            '; BIC laplacian = ' num2str(bic_laplacian)])
+        OptimalK = min(bic_knee, bic_laplacian);
+    case 4
+        %Evaluate using DaviesBouldin 10 times to get the best K
+        for i = 1:10
+            cur_eva = evalclusters(Embedding,Kmeans_10,'DaviesBouldin','KList',[1:Max_K]);
+            All_K(i) = cur_eva.OptimalK;
+            disp([num2str(i) 'th evaluation...'])
+        end
+        OptimalK = mode(All_K);
+        disp(['Best K identified by Davies-Bouldin is: ' num2str(OptimalK)]);
+        handles.Show_status.String = ['Best K is: ' num2str(OptimalK)];
 
-    %Revaluate using optimal K and 100 replicates
-    OptimalK_eva = evalclusters(Embedding,Kmeans_100,'DaviesBouldin','KList',[1:Max_K]);
-    [idx,C] = Kmeans_100(Embedding,OptimalK);
+        %Revaluate using optimal K and 100 replicates
+        OptimalK_eva = evalclusters(Embedding,Kmeans_100,'DaviesBouldin','KList',[1:Max_K]);
+        %[idx,C] = Kmeans_100(Embedding,OptimalK);   
 end
 
 %Record current time
@@ -479,24 +469,16 @@ c = clock;
 timetag = ['_' num2str(c(1)) num2str(c(2)) num2str(c(3)) num2str(c(4)) num2str(c(5))];
 
 %Store useful variables
-handles.Run_Kmeans.UserData.OptimalK = OptimalK;
-handles.Run_Kmeans.UserData.idx = idx;
-handles.Run_Kmeans.UserData.timetag = timetag;
-handles.Run_Kmeans.UserData.mapflag = mapflag;
-handles.Run_Kmeans.UserData.xmeans_flag = xmeans_flag;
+handles.Eva_Kmeans.UserData.OptimalK = OptimalK;
+%handles.Eva_Kmeans.UserData.idx = idx;
+handles.Eva_Kmeans.UserData.timetag = timetag;
+handles.Eva_Kmeans.UserData.mapflag = mapflag;
+handles.Eva_Kmeans.UserData.criterion_flag = criterion_flag;
 
-%Get representative traces of clusters by doing averaging within clusters
-A_rd = curObj.A_rd;
-Rep_traces = nan(OptimalK, size(A_rd,2));
-for k = 1:OptimalK
-    cur_cluster = [idx == k];
-    Rep_traces(k,:) = nanmean(A_rd(cur_cluster,:),1);
-end
+set(handles.Final_K, 'String', num2str(OptimalK));
+%Pass the embeddings to Runkmeans
+%handles.Runkmeans.UserData.Embedding = Embedding;
 
-%Save useful variables
-uisave({'idx', 'C', 'OptimalK', 'OptimalK_eva','Rep_traces', 'Embedding'...
-    , 'mapflag', 'timetag'}, ['Kmeans_result_BestK_' num2str(OptimalK) ...
-    '_mapflag_' num2str(mapflag) timetag '.mat'])
 
 
 
@@ -531,23 +513,24 @@ function Project_result_Callback(hObject, eventdata, handles)
 %Get relevent variables
 curObj = handles.output.UserData;
 try
-    OptimalK = handles.Run_Kmeans.UserData.OptimalK;
-    idx = handles.Run_Kmeans.UserData.idx;
-    timetag = handles.Run_Kmeans.UserData.timetag;
-    mapflag = handles.Run_Kmeans.UserData.mapflag;
+    OptimalK = handles.Eva_Kmeans.UserData.OptimalK;
+    idx = handles.Eva_Kmeans.UserData.idx;
+    timetag = handles.Eva_Kmeans.UserData.timetag;
+    mapflag = handles.Eva_Kmeans.UserData.mapflag;
 catch
     warning('Can not detect information for projection within the GUI!')
     uiopen('Please load the Kmeans result!');
 end
 
 try %Try to highlight the corresponding pixels in the reference brain map
-        K_colormap = hsv(OptimalK);
+        BestK = handles.Runkmeans.UserData.BestK;
+        K_colormap = hsv(BestK);
         xy_sub = curObj.xy_sub;
         
         %Construct representative trace for each cluster
         A_rd = curObj.A_rd;
-        Rep_traces = nan(OptimalK, size(A_rd,2));
-        for k = 1:OptimalK
+        Rep_traces = nan(BestK, size(A_rd,2));
+        for k = 1:BestK
             cur_color = K_colormap(k,:);
             cur_cluster = [idx == k];
             set(handles.figure1,'CurrentAxes',handles.axes1)
@@ -578,10 +561,131 @@ function Run_raw_Callback(hObject, eventdata, handles)
 % Hint: get(hObject,'Value') returns toggle state of Run_raw
 
 
-% --- Executes on button press in xmeans.
-function xmeans_Callback(hObject, eventdata, handles)
-% hObject    handle to xmeans (see GCBO)
+% --- Executes on button press in Criterion.
+function Criterion_Callback(hObject, eventdata, handles)
+% hObject    handle to Criterion (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-% Hint: get(hObject,'Value') returns toggle state of xmeans
+% Hint: get(hObject,'Value') returns toggle state of Criterion
+
+
+
+function Final_K_Callback(hObject, eventdata, handles)
+% hObject    handle to Final_K (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of Final_K as text
+%        str2double(get(hObject,'String')) returns contents of Final_K as a double
+
+
+% --- Executes during object creation, after setting all properties.
+function Final_K_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to Final_K (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+% --- Executes on button press in Runkmeans.
+function Runkmeans_Callback(hObject, eventdata, handles)
+% hObject    handle to Runkmeans (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+%See whether run on raw dFoF trace instead on reduced data
+rawflag = get(handles.Run_raw, 'Value');
+%Get current object
+curObj = handles.output.UserData;
+
+if rawflag
+    mapflag = 0;
+    disp('Run on raw input (dFoF traces)!')
+else
+    %Choose which type of data to use;
+    mapflag = get(handles.Choose_type, 'Value');
+end
+
+%Kmeans: 20 replicates
+if rawflag
+    Kmeans_10 = @(X,K)(kmeans(X, K, 'emptyaction','drop',...
+    'replicate', 10, 'Distance', 'correlation'));
+    Kmeans_100 = @(X,K)(kmeans(X, K, 'emptyaction','drop',...
+    'replicate',100, 'Distance', 'correlation'));
+else
+    Kmeans_10 = @(X,K)(kmeans(X, K, 'emptyaction','drop',...
+    'replicate',10));
+    Kmeans_100 = @(X,K)(kmeans(X, K, 'emptyaction','drop',...
+    'replicate',100));
+end
+
+%Get the best K to run kmenas
+try
+    %Get the best K to run kmeans
+    BestK = str2double(get(handles.Final_K, 'String'));
+    Embedding = getEmbedding(curObj, mapflag);
+    [idx,C] = Kmeans_100(Embedding, BestK);
+    %Store the idx and BestK
+    handles.Eva_Kmeans.UserData.idx = idx;
+    handles.Runkmeans.UserData.BestK = BestK;
+catch
+    msgbox('Please evaluate kmeans and choose the best K!')
+end
+
+%Get representative traces of clusters by doing averaging within clusters
+A_rd = curObj.A_rd;
+Rep_traces = nan(BestK, size(A_rd,2));
+for k = 1:BestK
+    cur_cluster = [idx == k];
+    Rep_traces(k,:) = nanmean(A_rd(cur_cluster,:),1);
+end
+
+%Store representative traces
+handles.Eva_Kmeans.UserData.Rep_traces = Rep_traces;
+
+%Get the Eva_kemans struct
+Eva_kmeans = handles.Eva_Kmeans.UserData;
+
+if ~isempty(Eva_kmeans)
+    mapflag = Eva_kmeans.mapflag;
+    timetag = Eva_kmeans.timetag;
+    criterion_flag = Eva_kmeans.criterion_flag;
+    %Save useful variables
+    uisave({'Eva_kmeans', 'idx', 'C'}, ['Kmeans_result_BestK_' num2str(BestK) ...
+        '_mapflag_' num2str(mapflag) '_criterion_' num2str(criterion_flag)...
+        '_' timetag '.mat'])
+else
+    uisave({'idx', 'C'}, ['Kmeans_result_BestK_' num2str(BestK) '_woEva.mat'])
+    msgbox('Please evaluate kmenas first!')
+end
+
+
+
+
+
+
+function Embedding = getEmbedding(curObj, mapflag)
+%Get embedding given mapflag
+    switch mapflag
+        case 15
+            Embedding = curObj.A_rd;    
+        case 1
+            Embedding = curObj.Y;   
+        case 2
+            %A_rd = curObj.A_rd;
+            %Redo diffusion map analysis using information from all dims
+            %Dmap = dimReduction.diffmap(A_rd, 2, size(A_rd,1)-1, [], curObj.adaptive);
+            psi = curObj.dParam.psi;
+            vals = curObj.dParam.vals;
+            t = curObj.dParam.t;
+            Dmap = psi(:,2:end).*(vals(2:end)'.^t);
+            Embedding = Dmap;
+        case 3
+            Embedding = curObj.PT; %PHATE
+    end

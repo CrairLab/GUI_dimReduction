@@ -1,5 +1,6 @@
 function [clst_labels, clst_centers, K_old, bic_after_split] = XMeans(X, kmax, max_iter)
 %Scripts translated from https://github.com/alex000kim/XMeans/blob/master/xmeans.py
+%Revised based on https://pyclustering.github.io/docs/0.9.0/html/d5/dc4/xmeans_8py_source.html
 %Implementation of XMeans algorithm based on
 %Pelleg, Dan, and Andrew W. Moore. "X-means: Extending K-means with Efficient Estimation of the Number of Clusters."
 %ICML. Vol. 1. 2000.
@@ -7,7 +8,7 @@ function [clst_labels, clst_centers, K_old, bic_after_split] = XMeans(X, kmax, m
     
     %Start with K = 1
     K = 1;
-    K_sub = 2;
+    K_sub = 2; %Number of splits for each centroid
     K_old = K;
     n_features = size(X, 2); %Dimensons of the data
     stop_splitting = 0;
@@ -44,7 +45,7 @@ function [add_k, bic_after_split] = get_additional_k_split(K, X, ...
     %Go over each of current clusters
     for clst_index = 1:K
         clst_points = X(clst_labels == clst_index, :);
-        clst_size = length(clst_points);
+        clst_size = size(clst_points,1);
         if clst_size <= K_sub
             %Skip if there isn't enough points 
             continue
@@ -62,6 +63,16 @@ function [add_k, bic_after_split] = get_additional_k_split(K, X, ...
         
         %Quantify BIC after splitting
         l_likelihood = 0;
+        subclst_variance = 0;
+        
+        %Calculate overall sub-class variance after split
+        for subclst_index = 1:K_sub
+            subclst_points = clst_points(subclst_labels == subclst_index, :);
+            subclst_variance = subclst_variance +...
+            sum((subclst_points - subclst_centers(subclst_index, :)).^2,...
+                'all')/(clst_size - K_sub);
+        end
+        
         %Go over each subcluster
         for subclst_index = 1:K_sub
             subclst_points = clst_points(subclst_labels == subclst_index, :);
@@ -69,8 +80,7 @@ function [add_k, bic_after_split] = get_additional_k_split(K, X, ...
             if subclst_size <= K_sub
                 continue
             end
-            subclst_variance = sum((subclst_points - subclst_centers(subclst_index, :)).^2,...
-            'all')/(subclst_size - K_sub);
+            
             %Accumulate loglikelihood from each subcluster
             l_likelihood = l_likelihood + loglikelihood(clst_size, ...
                 subclst_size, subclst_variance, n_features, K_sub);
@@ -79,7 +89,7 @@ function [add_k, bic_after_split] = get_additional_k_split(K, X, ...
         %Compute BIC after splitting
         bic_after_split(clst_index) = l_likelihood - subclst_n_params/ 2 * log(clst_size);
         if bic_before_split(clst_index) < bic_after_split(clst_index)
-            %Note that the BIC her is actually -BIC described on Wikipedia
+            %Note that the BIC here is actually -BIC described on Wikipedia
             add_k  = add_k + 1;
         end
 
