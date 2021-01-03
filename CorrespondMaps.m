@@ -513,10 +513,10 @@ function Project_result_Callback(hObject, eventdata, handles)
 %Get relevent variables
 curObj = handles.output.UserData;
 try
-    OptimalK = handles.Eva_Kmeans.UserData.OptimalK;
     timetag = handles.Eva_Kmeans.UserData.timetag;
     mapflag = handles.Eva_Kmeans.UserData.mapflag;
     try
+        OptimalK = handles.Runkmeans.UserData.BestK;
         idx = handles.Eva_Kmeans.UserData.idx;
     catch
         msgbox('Please click Run Kmeans first!')
