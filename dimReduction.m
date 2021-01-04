@@ -11,7 +11,7 @@ classdef dimReduction
 
     properties
         fd;        %parameters to further downsample input matrix
-        Dmax       %maximum dimension to be preserved when computing Dmap
+        Dmax;      %maximum dimension to be preserved when computing Dmap
         sz_fd;     %size of the further-downsampled movie matrix
         A_rd;      %downsampled movie matrix excluding nan elements
         A_ref;     %Reference frame (mean)
