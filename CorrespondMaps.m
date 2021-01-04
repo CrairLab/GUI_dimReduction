@@ -657,7 +657,7 @@ handles.Eva_Kmeans.UserData.Rep_traces = Rep_traces;
 %Get the Eva_kemans struct
 Eva_kmeans = handles.Eva_Kmeans.UserData;
 
-if ~isempty(Eva_kmeans)
+if isfield(Eva_kmeans, 'mapflag')
     mapflag = Eva_kmeans.mapflag;
     timetag = Eva_kmeans.timetag;
     criterion_flag = Eva_kmeans.criterion_flag;
