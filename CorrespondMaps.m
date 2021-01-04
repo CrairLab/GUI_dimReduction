@@ -444,10 +444,11 @@ switch criterion_flag
         %[idx,C] = Kmeans_100(Embedding,OptimalK);
     case 3
         %Use the BIC criterion
-        [OptimalK_eva, bic_knee, bic_laplacian] = bestBIC(Embedding, Max_K);
+        [OptimalK_eva, bic_knee, bic_laplacian, bic_max] = bestBIC(Embedding, Max_K);
         msgbox(['BIC knee = ' num2str(bic_knee) ...
-            '; BIC laplacian = ' num2str(bic_laplacian)])
-        OptimalK = min(bic_knee, bic_laplacian);
+            '; BIC laplacian = ' num2str(bic_laplacian) ...
+            ': BIC max = ' num2str(bic_max)])
+        OptimalK = min([bic_knee, bic_laplacian, bic_max]);
     case 4
         %Evaluate using DaviesBouldin 10 times to get the best K
         for i = 1:10
