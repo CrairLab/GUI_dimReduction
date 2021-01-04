@@ -744,6 +744,7 @@ set(handles.popupmenu2, 'Value', curVal);
 dParam = curObj.dParam;
 set(handles.Dmap_steps, 'String', num2str(dParam.t));
 set(handles.Dmap_dims, 'String', num2str(dParam.m));
+set(handles.Dmap_adaptive, 'Value', dParam.adaptive);
 if isfield(dParam, 'p')
     text = num2str(dParam.p);
 else
