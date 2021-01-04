@@ -259,6 +259,9 @@ set(handles.Spatial_factor,'Value',2);
 set(handles.Spatial_factor,'String',num2str(2));
 set(handles.Temporal_factor,'Value',2);
 set(handles.Temporal_factor,'String',num2str(2));
+%Set maximum diffusion map dimensions to preserve
+set(handles.Dmap_dims,'String',num2str(30))
+iniParameters.Dmax = 30;
 %Save default parameters;
 hObject.UserData = iniParameters;
 
@@ -318,14 +321,14 @@ set(handles.Run_status, 'Visible', 'On')
 set(handles.Run_status, 'String', 'Running...')
 
 %Load parameters
-param = get(handles.Use_default, 'UserData');
+param = getCurrentParamfunction(handles)
 curMovie = get(handles.Load_movie, 'UserData');
 
 %Run dimReduction
 try
     curObj = dimReduction(curMovie, 'tflag', param.tflag, ...
         'locflag', param.locflag, 'locfactor', param.locfactor, ...
-        'fd', param.fd, 'adaptive', param.adaptive);
+        'fd', param.fd, 'adaptive', param.adaptive, 'Dmax', param.Dmax);
     set(handles.Run_status, 'String', 'Finished!')
 catch
     set(handles.Run_status, 'String', 'Error!')
@@ -628,7 +631,7 @@ function Dmap_sigma_Callback(hObject, eventdata, handles)
 
 
 % --- Executes during object creation, after setting all properties.
-function Dmap_sigma_CreateFcn(hObject, eventdata, handles)
+function Dmap_sigma_CreateFcn(hObject, ~, handles)
 % hObject    handle to Dmap_sigma (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    empty - handles not created until after all CreateFcns called
@@ -1015,3 +1018,21 @@ function pt_a_CreateFcn(hObject, eventdata, handles)
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
+
+
+function param = getCurrentParamfunction(handles)
+%Renew parameters based on current inputs
+%Set default parameters
+%pixelwise/framewise analysis
+param.tflag = get(handles.Choose_type,'Value') - 2;
+%Whether constraint on location
+param.locflag = get(handles.Constrain_loc,'Value');
+param.locfactor = str2double(get(handles.Constrain_coeff,'String'));
+%Whether use adaptive kernel for diffusion map analysis
+param.adaptive = get(handles.Dmap_adaptive, 'Value');
+%Downsample factors
+param.fd = [str2double(get(handles.Spatial_factor,'String')) ...
+    str2double(get(handles.Temporal_factor,'String'))];
+%Maximum diffusion map dimensions to preserve
+param.Dmax = str2double(get(handles.Dmap_dims,'String'));
+

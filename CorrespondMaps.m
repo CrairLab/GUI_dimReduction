@@ -391,10 +391,6 @@ else
     mapflag = get(handles.Choose_type, 'Value');
 end
 
-Embedding = getEmbedding(curObj, mapflag);
-
-%checkname = ['Kmeans_result_' num2str(mapflag) '*'];
-
 %Get Maximum K to search
 if isnan(str2double(handles.Max_K.String))
     msgbox('Please input a valid interger!')
@@ -402,6 +398,10 @@ if isnan(str2double(handles.Max_K.String))
 else
     Max_K = str2double(handles.Max_K.String);
 end
+
+Embedding = getEmbedding(curObj, mapflag, Max_K);
+
+%checkname = ['Kmeans_result_' num2str(mapflag) '*'];
 
 %Kmeans: 20 replicates
 if rawflag
@@ -517,6 +517,7 @@ try
     mapflag = handles.Eva_Kmeans.UserData.mapflag;
     try
         OptimalK = handles.Runkmeans.UserData.BestK;
+        disp(['Current K for projection is: ' num2str(OptimalK)])
         idx = handles.Eva_Kmeans.UserData.idx;
     catch
         msgbox('Please click Run Kmeans first!')
@@ -633,7 +634,7 @@ end
 try
     %Get the best K to run kmeans
     BestK = str2double(get(handles.Final_K, 'String'));
-    Embedding = getEmbedding(curObj, mapflag);
+    Embedding = getEmbedding(curObj, mapflag, BestK);
     [idx,C] = Kmeans_100(Embedding, BestK);
     %Store the idx and BestK
     handles.Eva_Kmeans.UserData.idx = idx;
@@ -674,7 +675,7 @@ end
 
 
 
-function Embedding = getEmbedding(curObj, mapflag)
+function Embedding = getEmbedding(curObj, mapflag, Max_K)
 %Get embedding given mapflag
     switch mapflag
         case 15
@@ -688,8 +689,14 @@ function Embedding = getEmbedding(curObj, mapflag)
             psi = curObj.dParam.psi;
             vals = curObj.dParam.vals;
             t = curObj.dParam.t;
-            Dmap = psi(:,2:end).*(vals(2:end)'.^t);
+            if nargin < 3
+                Dmap = psi(:,2:end).*(vals(2:end)'.^t);
+            else
+                Dmax = min(size(psi,2), Max_K + 1);
+                Dmap = psi(:,2:Dmax).*(vals(2:Dmax)'.^t);
+            end
             Embedding = Dmap;
+            disp(['Reconstructed Dmap dimension = ' num2str(size(Dmap,2))])
         case 3
             Embedding = curObj.PT; %PHATE
     end

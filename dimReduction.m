@@ -11,6 +11,7 @@ classdef dimReduction
 
     properties
         fd;        %parameters to further downsample input matrix
+        Dmax       %maximum dimension to be preserved when computing Dmap
         sz_fd;     %size of the further-downsampled movie matrix
         A_rd;      %downsampled movie matrix excluding nan elements
         A_ref;     %Reference frame (mean)
@@ -47,9 +48,15 @@ classdef dimReduction
             adaptive = 1;
             tflag = 0;
             locflag = 0;
+            Dmax = 30;
             
             % get input parameters
             for i=1:length(varargin)
+                % whether use locations as constraints
+                if(strcmp(varargin{i},'Dmax'))
+                   Dmax = lower(varargin{i+1});
+                end
+                 
                 % fd for further downsampling
                 if(strcmp(varargin{i},'fd'))
                    fd = lower(varargin{i+1});
@@ -140,7 +147,7 @@ classdef dimReduction
                 num2str(size(obj.A_rd))]);
             clear A_re;
             
-            [obj.Dmap, obj.dParam] = dimReduction.diffmap(obj.A_rd, 2, 30, 5, adaptive);
+            [obj.Dmap, obj.dParam] = dimReduction.diffmap(obj.A_rd, 2, Dmax, 5, adaptive);
             [obj.Y, obj.tParam, ~] = dimReduction.doTSNE(obj.A_rd);
             [obj.PT, obj.pParam, ~] = dimReduction.doPHATE(obj.A_rd, 'ndim', 3);
             
