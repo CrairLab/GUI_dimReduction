@@ -514,18 +514,22 @@ function Project_result_Callback(hObject, eventdata, handles)
 %Get relevent variables
 curObj = handles.output.UserData;
 try
-    timetag = handles.Eva_Kmeans.UserData.timetag;
-    mapflag = handles.Eva_Kmeans.UserData.mapflag;
     try
-        OptimalK = handles.Runkmeans.UserData.BestK;
-        disp(['Current K for projection is: ' num2str(OptimalK)])
+        BestK = handles.Runkmeans.UserData.BestK;
+        disp(['Current K for projection is: ' num2str(BestK)])
         idx = handles.Eva_Kmeans.UserData.idx;
     catch
         msgbox('Please click Run Kmeans first!')
     end
+    timetag = handles.Eva_Kmeans.UserData.timetag;
+    mapflag = handles.Eva_Kmeans.UserData.mapflag;
 catch
-    warning('Can not detect information for projection within the GUI!')
-    uiopen('Please load the Kmeans result!');
+    warning('Can not detect information for evaluation within the GUI!')
+    warning('Getting result from direct Kmeans running')
+    mapflag = -1;
+    c = clock;
+    timetag = ['_' num2str(c(1)) num2str(c(2)) num2str(c(3)) num2str(c(4)) num2str(c(5))];
+    %uiopen('Please load the Kmeans result!');
 end
 
 try %Try to highlight the corresponding pixels in the reference brain map
@@ -550,7 +554,7 @@ try %Try to highlight the corresponding pixels in the reference brain map
         %colormap(handles.axes1,'jet')
         hold(handles.axes1, 'off');
         saveas(handles.figure1,['Clustering_result_' num2str(mapflag) ...
-            '_OptimalK_' num2str(OptimalK) timetag '.png'])
+            '_BestK_' num2str(BestK) timetag '.png'])
         %hold(handles.axes1, 'off');
 catch
     msgbox('Something wrong! Please make sure you load the right file or rerun Kmeans!'...
