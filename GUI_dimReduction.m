@@ -210,6 +210,9 @@ displayParam(curObj, handles);
 %Plot tSNE and diffusion map
 plotAxes(curObj, handles);
 
+%Show that the file is loaded sucessfully
+msgbox('dimReduction Obj loaded!')
+
 % --- Executes on selection change in Choose_type.
 function popupmenu2_Callback(hObject, eventdata, handles)
 % hObject    handle to Choose_type (see GCBO)
