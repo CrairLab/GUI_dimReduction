@@ -181,7 +181,7 @@ classdef dimReduction
             end
             
             %Calcultae pairwise distances
-            if any(isnan(xs))
+            if any(isnan(xs(:)))
                 disp('Detected NaN in input matrix, pdist might fail...')
             end
             pdist_xs = pdist(xs);
