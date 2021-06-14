@@ -131,7 +131,11 @@ classdef dimReduction
             
             %Delete pixels that are outside roi (are NaN or 0)
             A_re = reshape(A_fd, [sz(1)*sz(2), sz(3)]);
-            subIdx = and((~isnan(A_re(:,1))),(~(A_re(:,1)==0)));
+            %subIdx = and((~isnan(A_re(:,1))),(~(A_re(:,1)==0)));
+            %A_re = A_re(subIdx, :);
+            outIdx = and((~isnan(A_re(:))),(~(A_re(:)==0)));
+            outIdx = reshape(outIdx, [sz(1)*sz(2), sz(3)]);
+            subIdx = sum(outIdx, 2) == sz(3);
             A_re = A_re(subIdx, :);
             obj.subIdx = subIdx;
             obj.xy_sub = dimReduction.genXYind(sz, subIdx);
