@@ -43,8 +43,7 @@ function BIC = getBIC(X, clst_labels, clst_centers)
     
     %Get the BIC score 
     BIC = l - 0.5 * (M+1)*K * log(R);
-
-
+    
 end
 
 function variance = getvariance(R, K ,X, clst_labels, clst_centers)

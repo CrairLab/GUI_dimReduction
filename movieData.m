@@ -81,16 +81,16 @@ classdef movieData
         %    output: 3D-matrix A containing data from a specific movie
         
             A = openMovie(filename);
-            tmp = dir([filename(1:length(filename)-4) '@00*.tif']);
+            %tmp = dir([filename(1:length(filename)-4) '@00*.tif']);
             %Make a combined matrix for each recording
-            if ~isempty(tmp)
-                for j = 1:numel(tmp)
-                    fn = tmp(j).name;
-                    B = openMovie(fn);
-                    A = cat(3, A, B);
-                    clear B
-                end
-            end             
+            %if ~isempty(tmp)
+            %    for j = 1:numel(tmp)
+            %        fn = tmp(j).name;
+            %        B = openMovie(fn);
+            %        A = cat(3, A, B);
+            %        clear B
+            %    end
+            %end             
         end
              
         
@@ -510,38 +510,38 @@ classdef movieData
         %
         %    Output:
         %        downA    spatially downsampled matrix
-
-            sz = size(A);
-            newsz1 = mod(-sz(1),s)+sz(1);
-            newsz2 = mod(-sz(2),s)+sz(2);
-            IdxEnd1 = ceil(sz(1)/s)*s;
-            IdxEnd2 = ceil(sz(2)/s)*s;
+            
+            downA = imresize(A, 1/s, 'bilinear');
+        %    sz = size(A);
+        %    newsz1 = mod(-sz(1),s)+sz(1);
+        %    newsz2 = mod(-sz(2),s)+sz(2);
+        %    IdxEnd1 = ceil(sz(1)/s)*s;
+        %    IdxEnd2 = ceil(sz(2)/s)*s;
             
             %downA = nan(newsz1/s,newsz2/s,sz(3));
-            downA = [];
+        %    downA = [];
             
-            if length(sz)<3
-                sz(3) = 1;
-            end
+        %    if length(sz)<3
+        %        sz(3) = 1;
+        %    end
 
-            parfor k = 1:sz(3)  
-                A_newk_avg = nan(newsz1/s,newsz2/s,s^2);
-                A_k = A(:,:,k);
-                A_newk = nan(newsz1,newsz2);
-                A_newk(1:sz(1),1:sz(2)) = A_k;
-                count = 0;
-                for i = 1:s
-                    Idx1 = [1+i-1:s:IdxEnd1];
-                    for j = 1:s
-                        count = count + 1;
-                        Idx2 = [1+j-1:s:IdxEnd2];
-                        A_newk_avg(:,:,count) = A_newk(Idx1,Idx2);
-                    end
-                end
-                downA_k = nanmean(A_newk_avg,3);
-                downA(:,:,k) = downA_k;
-            end
-
+        %    parfor k = 1:sz(3)  
+        %        A_newk_avg = nan(newsz1/s,newsz2/s,s^2);
+        %        A_k = A(:,:,k);
+        %        A_newk = nan(newsz1,newsz2);
+        %        A_newk(1:sz(1),1:sz(2)) = A_k;
+        %        count = 0;
+        %        for i = 1:s
+        %            Idx1 = [1+i-1:s:IdxEnd1];
+        %            for j = 1:s
+        %                count = count + 1;
+        %                Idx2 = [1+j-1:s:IdxEnd2];
+        %                A_newk_avg(:,:,count) = A_newk(Idx1,Idx2);
+        %            end
+        %        end
+        %        downA_k = nanmean(A_newk_avg,3);
+        %        downA(:,:,k) = downA_k;
+        %    end
         end
 
 
@@ -1492,10 +1492,10 @@ classdef movieData
                 warning('More than half of the movie will be discarded given current threshold!')
                 disp('Increase motion detection threshold to 0.7!')
                 disp('Double check movie quality!')
-                %If the norm is larger than 2 (>2 pixel at both directions)
+                %If the norm is larger than 1 (>1 pixel at both directions)
                 %label as large-movement frame. Save frames that do not
                 %move that much as movIdx_saved
-                movIdx_saved = NormTform_all < 2.1;
+                movIdx_saved = NormTform_all < 1.5;
                 saveRatio = sum(movIdx_saved)/sz(3);
                 disp(['saveRatio at 2.0 threshold: ' num2str(saveRatio)])
                 filter = [1,1,1,1,1,1,1,1,1,1,1,1,1]; %Default filter: discard the neighbouring 13 frames
